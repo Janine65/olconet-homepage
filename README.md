@@ -466,10 +466,13 @@ Ein absoluter Pfad ist ebenfalls erlaubt. Das Verzeichnis wird beim Start
 angelegt und muss fuer den Backend-Benutzer schreibbar sein.
 Es ist von Git und Docker-Build-Kontext ausgeschlossen.
 
-Docker verwendet das benannte Volume **uploads** unter `/data/uploads`.
-Das Image initialisiert dessen Rechte fuer UID 1001; das restliche
-Container-Dateisystem bleibt schreibgeschuetzt. Auf Synology wird daraus
-bei Projektname `olconet` das Volume `olconet_uploads`.
+Auf dem Mac verwendet Docker das benannte Volume **uploads** unter
+`/data/uploads`, bei Projektname `olconet` also `olconet_uploads`.
+Das Image initialisiert dessen Rechte fuer UID 1001. Auf Synology wird
+stattdessen der NAS-Ordner **`/volume1/server/olconet/uploads`** direkt unter
+`/data/uploads` eingebunden (Bind-Mount). Dessen Rechte muessen auf dem NAS
+vorbereitet werden; die Rechte im Image gelten nicht fuer einen Bind-Mount.
+Das restliche Container-Dateisystem bleibt schreibgeschuetzt.
 Keine Freigabe dieses Verzeichnisses ueber den Reverse-Proxy anlegen.
 Fuer Uploads muss der vorgeschaltete Reverse-Proxy mindestens 12 MiB
 Request-Groesse erlauben (10 MiB Bild plus Multipart-/Metadaten-Overhead).
@@ -477,7 +480,8 @@ Request-Groesse erlauben (10 MiB Bild plus Multipart-/Metadaten-Overhead).
 **Datenbank und Upload-Volume gemeinsam sichern und wiederherstellen.**
 Fuer konsistente Backups zuerst das Backend stoppen, dann Datenbankdump
 und Upload-Dateien sichern. Die Bilder allein enthalten keine Zuordnungen,
-Titel oder Veroeffentlichungsinformationen. `down -v` loescht auch Bilder.
+Titel oder Veroeffentlichungsinformationen. `down -v` loescht auf dem Mac
+auch Bilder im benannten Volume; der Synology-Bind-Mount-Ordner bleibt erhalten.
 Speicherplatz ueberwachen; Disk-/Dateifehler werden explizit gemeldet.
 Nach einem Prozessabbruch waehrend eines Uploads koennen unreferenzierte
 Dateien verbleiben; es gibt noch keinen automatischen Bereinigungsjob.
@@ -523,16 +527,80 @@ Mac, nicht `localhost` (das waere der Container selbst). PostgreSQL muss
 Verbindungen aus Docker zulassen: Erreichbarkeit, `listen_addresses` und
 gezielte `pg_hba.conf`-Regeln pruefen; keine pauschale `trust`-Freigabe setzen.
 
-### Synology: eigener PostgreSQL-Container
+#### Vorhandene lokale Bilder nach Docker uebernehmen
+
+Compose erstellt `olconet_uploads` beim ersten Start automatisch und bindet es
+im Backend unter `/data/uploads` ein. Dieses Volume liegt in Docker Desktop,
+nicht als Ordner im Projekt. Es uebernimmt **nicht automatisch** die Dateien
+aus `apps/backend/uploads`.
+
+Wenn dieselbe Datenbank zuvor mit `pnpm dev` verwendet wurde, bleiben die
+Bildzuordnungen erhalten, aber die Bilddateien muessen ebenfalls uebernommen
+werden. Ein leeres Volume fuehrt sonst zu fehlenden Vorschauen trotz vorhandener
+Datenbankeintraege. Falls lokal ein anderes `UPLOAD_DIR` konfiguriert war,
+dieses Verzeichnis statt `apps/backend/uploads` verwenden.
+
+Vor der Uebernahme lokale Uploads beenden und Datenbank sowie beide
+Bildspeicher sichern. Die Dateien mit ihren unveraenderten Namen kopieren.
+Vorhandene Dateien im Ziel nicht ungeprueft ueberschreiben; die Rechte muessen
+weiterhin zum Backend-Benutzer UID 1001 passen (Verzeichnis 0700, Dateien 0600).
+Das Volume nicht loeschen oder neu erstellen, um fehlende Bilder zu beheben.
+`docker compose down` erhaelt es, `docker compose down -v` loescht es.
+
+### Synology: vorhandener PostgreSQL-Container im Netzwerk back-tier
+
+Auf der Synology existiert bereits der PostgreSQL-Container **postgres_server**
+mit internem Port **5432** im Docker-Netzwerk **back-tier**. Die Anwendung
+verwendet diesen Server; sie startet keinen eigenen Datenbankcontainer und
+legt kein PostgreSQL-Volume an. Backend, Migration und Kontoeinrichtung
+werden zusaetzlich an das externe Netzwerk angeschlossen. Homepage und
+Verwaltung bleiben ausschliesslich im Anwendungsnetzwerk `olconet`.
+
+Das Netzwerk `back-tier` muss bereits existieren und `postgres_server` darin
+als Containername oder Netzwerk-Alias aufloesbar sein. Die Datenbank `olconet`
+und ein eigener Datenbankbenutzer mit den erforderlichen Rechten muessen
+vorher auf diesem Server angelegt werden. Migrationen legen die Tabellen
+im Schema `webpage` an, nicht den PostgreSQL-Benutzer oder die Datenbank.
+
+#### Bildspeicher auf dem NAS vorbereiten
+
+Der Backend-Container verwendet den Bind-Mount
+`/volume1/server/olconet/uploads:/data/uploads`. Vor dem ersten Start auf
+der Synology den Ordner anlegen und fuer UID/GID 1001 freigeben:
+
+```sh
+sudo mkdir -p /volume1/server/olconet/uploads
+sudo chown 1001:1001 /volume1/server/olconet/uploads
+sudo chmod 700 /volume1/server/olconet/uploads
+```
+
+Compose legt einen fehlenden Ordner absichtlich nicht automatisch an:
+Das verhindert einen unbemerkt als root angelegten, nicht schreibbaren Speicher.
+Bei vorhandenen Bildern zuerst sichern und deren Eigentuemerechte pruefen;
+die Bilddateien benoetigen UID 1001 und Modus 0600. Auch Synology-ACLs duerfen
+den Zugriff nicht blockieren. Keine pauschale Freigabe mit `chmod 777` verwenden.
+Der Ordner darf nicht direkt ueber den Reverse-Proxy veroeffentlicht werden.
+
+Vorhandene Bilder aus einem bisherigen Docker-Volume werden nicht automatisch
+uebernommen. Bei einem Speicherwechsel das Backend stoppen und die Dateien
+mit unveraenderten Namen in diesen Ordner uebertragen, ohne vorhandene Dateien
+ungeprueft zu ueberschreiben. Datenbank und Bilddateien gemeinsam sichern.
 
 ```sh
 cp infrastructure/env.synology.example .env.docker.synology
-# Beide Passwoerter, HTTPS-ADMIN_ORIGIN, SITE_URL und IMAGE_TAG pro Release setzen.
+chmod 600 .env.docker.synology
+# DATABASE_URL, HTTPS-ADMIN_ORIGIN, SITE_URL und IMAGE_TAG pro Release setzen.
 docker compose --env-file .env.docker.synology -f compose.yaml -f compose.synology.yaml config --quiet
 ```
 
-`POSTGRES_PASSWORD` enthaelt das echte Passwort, `DATABASE_URL` dasselbe
-Passwort ggf. percent-encoded. Env-Dateien nicht versionieren, nicht teilen
+`DATABASE_URL` hat die Form
+`postgresql://olconet:PASSWORT@postgres_server:5432/olconet?schema=webpage`.
+Benutzer und Passwort an den vorhandenen Server anpassen; das Passwort ggf.
+percent-encodieren. Der interne Port 5432 ist entscheidend, nicht ein
+veroeffentlichter NAS-Host-Port. `POSTGRES_PASSWORD` wird hier nicht benoetigt.
+Eine bereits vorhandene `.env.docker.synology` wird nicht automatisch durch
+die geaenderte Vorlage aktualisiert: darin ebenfalls Host und Port anpassen.
+Env-Dateien nicht versionieren, nicht teilen
 und nur fuer den betreibenden Benutzer lesbar machen. `config` ohne
 `--quiet` kann Zugangsdaten ausgeben.
 
@@ -545,27 +613,46 @@ docker image save -o olconet-images.tar olconet/homepage:0.1.0 olconet/admin:0.1
 ```
 
 Image-Namen/Tags im `save`-Befehl bei abweichender Konfiguration anpassen.
-Archiv, Compose-Dateien und die separat geschuetzt uebertragene Env-Datei
-auf die Synology kopieren. Alternativ eigene Registry in `IMAGE_PREFIX`
+Archiv, die eigenstaendige Datei `infrastructure/compose.synology.standalone.yaml`
+und die separat geschuetzt uebertragene Env-Datei auf die Synology kopieren.
+Die eigenstaendige Datei auf dem NAS als
+**`/volume1/server/olconet/compose.yaml`** ablegen, die Env-Datei daneben als
+**`.env.docker.synology`**. Die Basisdatei und das Synology-Override werden
+dort nicht zusaetzlich benoetigt. Es wird kein Quellcode oder Dockerfile auf
+dem NAS benoetigt; diese Konfiguration startet nur fertig gebaute Images.
+Alternativ eigene Registry in `IMAGE_PREFIX`
 eintragen, Images pushen und auf Synology pullen.
 
-Auf der Synology im Projektverzeichnis:
+Auf der Synology im Projektverzeichnis (Images zuerst importieren oder mit
+`docker compose --env-file .env.docker.synology pull` aus der Registry laden):
 
 ```sh
+cd /volume1/server/olconet
 docker image load -i olconet-images.tar
-docker compose --env-file .env.docker.synology -f compose.yaml -f compose.synology.yaml up -d --wait postgres
-docker compose --env-file .env.docker.synology -f compose.yaml -f compose.synology.yaml run --rm --no-deps migrate
-docker compose --env-file .env.docker.synology -f compose.yaml -f compose.synology.yaml run --rm --no-deps create-admin --email janine@olconet.com --name Janine
-docker compose --env-file .env.docker.synology -f compose.yaml -f compose.synology.yaml up -d --no-build --wait
+docker compose --env-file .env.docker.synology config --quiet
+docker compose --env-file .env.docker.synology run --rm --no-deps migrate
+# Nur wenn dieses Verwaltungskonto noch nicht in der Datenbank existiert:
+docker compose --env-file .env.docker.synology run --rm --no-deps create-admin --email janine@olconet.com --name Janine
+docker compose --env-file .env.docker.synology up -d --wait
 ```
 
-PostgreSQL 18 speichert Daten im benannten Volume `postgres-data` unter
-`/var/lib/postgresql` und hat **keinen veroeffentlichten Host-Port**.
-Initialisierung erfolgt nur bei leerem Volume. Eine spaetere Aenderung von
-`POSTGRES_PASSWORD` in der Env-Datei aendert kein bestehendes DB-Passwort.
-Passwortrotation muss in PostgreSQL und der Backend-Konfiguration erfolgen.
-Nicht `down -v` verwenden: das loescht die Daten. Projektname `olconet`
-beibehalten, damit beim Upgrade dasselbe Volume verwendet wird.
+Migrationen zuerst erfolgreich abschliessen. Der Upload-Ordner und das externe
+Netzwerk `back-tier` muessen wie oben beschrieben vorbereitet sein.
+Falls die Compose-Version auf dem NAS `--wait` nicht unterstuetzt,
+`up -d` verwenden und anschliessend mit
+`docker compose --env-file .env.docker.synology ps` die Healthchecks pruefen.
+Die kombinierte Basis-/Override-Konfiguration bleibt im Entwicklungsprojekt
+fuer Builds und Konfigurationstests verfuegbar.
+
+Der vorhandene PostgreSQL-Server muss vor der Migration erreichbar sein.
+Da er ausserhalb dieses Compose-Projekts laeuft, gibt es kein `depends_on`
+auf diesen Container. Bei einem Fehler der Migration nicht mit dem Start
+fortfahren. Das Backend meldet fehlende Datenbankverbindung ueber seinen
+Readiness-Healthcheck. Passwortrotation muss im vorhandenen PostgreSQL und
+in `DATABASE_URL` erfolgen; die Env-Datei allein aendert kein DB-Passwort.
+Der Synology-Bildordner bleibt bei `down` und `down -v` erhalten; dennoch
+`down -v` vermeiden, da es andere benannte Projekt-Volumes loeschen kann.
+Den Bind-Mount-Pfad beim Upgrade unveraendert beibehalten.
 Regelmaessige `pg_dump`-Backups ausserhalb des NAS und Wiederherstellungstests
 vor dem produktiven Betrieb einrichten; ein Volume ist kein Backup.
 
@@ -577,8 +664,10 @@ Backend; Port 18433 nicht oeffentlich weiterleiten. Zusaetzliche
 NAS-Firewall-/VPN-Beschraenkungen fuer die Verwaltung sind empfehlenswert.
 Bei reinem SSH-Tunnel-Test stattdessen ausdruecklich die localhost-Origin
 konfigurieren. Die konkrete Domain und Zertifikate werden im
-Synology-Reverse-Proxy konfiguriert. Das Upload-Volume ist separat vom
-PostgreSQL-Volume persistent.
+Synology-Reverse-Proxy konfiguriert. Der Upload-Ordner ist separat vom
+Speicher des bestehenden PostgreSQL-Containers persistent. Datenbank und
+Upload-Dateien gemeinsam sichern und bei einer Uebernahme vom Mac gemeinsam
+uebertragen; der Image-Transfer enthaelt weder Datenbank noch Uploads.
 Ein separates PostgreSQL-Upgrade erfordert eine geplante Datenmigration;
 nicht einfach die Major-Version des Images wechseln.
 
