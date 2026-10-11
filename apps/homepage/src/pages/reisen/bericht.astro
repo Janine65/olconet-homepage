@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+<Layout title="Reisebericht">
+  <a href="/reisen/">Zurueck zu den Reiseberichten</a>
+  <p id="report-status" role="status">Reisebericht wird geladen ...</p>
+  <article id="report-article" hidden>
+    <h1 id="report-title"></h1>
+    <p id="report-meta"></p>
+    <p id="report-excerpt"></p>
+    <div id="report-content" class="report-content"></div>
+    <section id="report-gallery" class="report-gallery" aria-label="Bildergalerie zum Reisebericht" hidden></section>
+  </article>
+  <button id="report-retry" type="button" hidden>Erneut versuchen</button>
+  <noscript><p>Zum Lesen dieses Berichts bitte JavaScript aktivieren.</p></noscript>
+</Layout>
+<script>
+  import { loadReport } from '../../scripts/reports';
+  loadReport();
+</script>

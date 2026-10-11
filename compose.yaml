@@ -1,0 +1,86 @@
+name: olconet
+
+x-runtime: &runtime
+  platform: ${DOCKER_PLATFORM:?DOCKER_PLATFORM muss gesetzt sein}
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  networks: [olconet]
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: "3" }
+
+x-backend: &backend
+  <<: *runtime
+  image: ${IMAGE_PREFIX:-olconet}/backend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+  build:
+    context: .
+    dockerfile: infrastructure/Dockerfile.backend
+  environment:
+    NODE_ENV: production
+    PORT: "8080"
+    DATABASE_URL: ${DATABASE_URL:?DATABASE_URL muss gesetzt sein}
+    ADMIN_ORIGIN: ${ADMIN_ORIGIN:?ADMIN_ORIGIN muss gesetzt sein}
+    SITE_URL: ${SITE_URL:?SITE_URL muss gesetzt sein}
+    UPLOAD_DIR: /data/uploads
+
+services:
+  homepage:
+    <<: *runtime
+    image: ${IMAGE_PREFIX:-olconet}/homepage:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.frontend
+      args: { APP: homepage }
+    ports: ["127.0.0.1:18431:8080"]
+    environment:
+      API_PROXY_URL: http://backend:8080
+      API_PROXY_PREFIX: /api/public/
+    healthcheck: &health
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  admin:
+    <<: *runtime
+    image: ${IMAGE_PREFIX:-olconet}/admin:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.frontend
+      args: { APP: admin }
+    ports: ["127.0.0.1:18432:8080"]
+    environment:
+      API_PROXY_URL: http://backend:8080
+    healthcheck: *health
+
+  backend:
+    <<: *backend
+    volumes: [uploads:/data/uploads]
+    ports: ["127.0.0.1:18433:8080"]
+    healthcheck: *health
+
+  migrate:
+    <<: *backend
+    profiles: [tools]
+    restart: "no"
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+
+  create-admin:
+    <<: *backend
+    profiles: [tools]
+    restart: "no"
+    stdin_open: true
+    tty: true
+    entrypoint: ["node", "dist/cli/create-admin.js"]
+
+networks:
+  olconet:
+
+volumes:
+  uploads:

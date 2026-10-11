@@ -1,0 +1,109 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MediaCategory {
+  TRAVEL
+  DRAWING
+  SAMMY
+}
+
+model AdminUser {
+  id           String         @id @default(uuid()) @db.Uuid
+  email        String         @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
+  reports      TravelReport[]
+  sessions     AdminSession[]
+}
+
+model AdminSession {
+  tokenHash String    @id @db.Char(64)
+  userId    String    @db.Uuid
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime  @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginThrottle {
+  key       String   @id
+  attempts  Int
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
+
+model TravelReport {
+  id              String            @id @default(uuid()) @db.Uuid
+  slug            String            @unique
+  title           String
+  excerpt         String
+  contentMarkdown String            @default("")
+  contentHtml     String            @default("")
+  version         Int               @default(0)
+  status          PublicationStatus @default(DRAFT)
+  destination     String?
+  travelStart     DateTime?         @db.Date
+  travelEnd       DateTime?         @db.Date
+  publishedAt     DateTime?         @db.Timestamptz(3)
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+  authorId        String            @db.Uuid
+  author          AdminUser         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  images          ReportImage[]
+
+  @@index([status, publishedAt])
+}
+
+model MediaAsset {
+  id           String            @id @default(uuid()) @db.Uuid
+  revision     Int               @default(0)
+  uploadKey    String?           @unique @db.Uuid
+  uploadFingerprint String?
+  storageKey   String            @unique
+  originalName String
+  mimeType     String
+  byteSize     Int
+  altText      String
+  title        String
+  description  String?
+  category     MediaCategory
+  status       PublicationStatus @default(DRAFT)
+  sortOrder    Int               @default(0)
+  capturedAt   DateTime?         @db.Timestamptz(3)
+  publishedAt  DateTime?         @db.Timestamptz(3)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  reports      ReportImage[]
+
+  @@index([category, status, sortOrder])
+}
+
+model ReportImage {
+  reportId  String       @db.Uuid
+  assetId   String       @db.Uuid
+  sortOrder Int          @default(0)
+  inGallery Boolean      @default(true)
+  caption   String?
+  report    TravelReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  asset     MediaAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([reportId, assetId])
+  @@index([assetId])
+}

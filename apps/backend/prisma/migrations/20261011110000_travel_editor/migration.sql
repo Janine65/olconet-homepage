@@ -1,0 +1,4 @@
+ALTER TABLE "TravelReport"
+  ADD COLUMN "contentHtml" TEXT NOT NULL DEFAULT '',
+  ADD COLUMN "version" INTEGER NOT NULL DEFAULT 0,
+  ALTER COLUMN "contentMarkdown" SET DEFAULT '';

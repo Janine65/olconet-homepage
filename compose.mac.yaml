@@ -1,0 +1,7 @@
+services:
+  backend:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  migrate:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+  create-admin:
+    extra_hosts: ["host.docker.internal:host-gateway"]

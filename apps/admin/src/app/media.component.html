@@ -1,0 +1,95 @@
+<section class="reports">
+  <div class="section-heading">
+    <h1 tabindex="-1">{{ label }}{{ mode === 'sort' ? ' sortieren' : mode === 'upload' ? ': Mehrfachupload' : mode === 'edit' ? ': Bild bearbeiten' : mode === 'new' ? ': Bild hochladen' : '' }}</h1>
+    @if (mode === 'list') {
+      <a class="button-link" [routerLink]="[basePath, 'neu']">Neues Bild</a>
+      <a class="button-link secondary" [routerLink]="[basePath, 'upload']">Mehrere Bilder hochladen</a>
+    } @else { <a [routerLink]="basePath">Zurueck zur Bildliste</a> }
+  </div>
+  @if (mode === 'upload' || mode === 'new') {
+  <p>Alle Uploads sind private Entwuerfe. Reisebilder werden nur mit ihrem Bericht veroeffentlicht. JPEG, PNG oder WebP, maximal 10 MiB und 40 Millionen Pixel. Bilder werden auf maximal 2560 Pixel verkleinert und ohne GPS-/EXIF-Metadaten als WebP gespeichert.</p>
+  }
+  @if (mode === 'upload') {
+    <app-upload-queue inputId="media-upload-files" [category]="gallery" [disabled]="busy()" (finished)="uploaded()" />
+  }
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (success()) { <p class="success" role="status">{{ success() }}</p> }
+  @if (mode === 'list' && gallery) {
+    <a class="button-link secondary" [routerLink]="[basePath, 'sortieren']">Reihenfolge sortieren</a>
+  }
+  @for (sortCategory of sortingCategory() ? [sortingCategory()!] : []; track sortCategory) {
+    <app-media-order [category]="sortCategory" [disabled]="busy() || dirty() || !!queue?.running()"
+      (busyChange)="busy.set($event)" (saved)="sorted()" />
+    <button type="button" class="secondary" (click)="closeSorting()" [disabled]="busy()">Sortieransicht schliessen</button>
+    @if (dirty()) { <p class="hint">Bitte die Bildangaben erst speichern oder verwerfen, bevor du die Reihenfolge aenderst.</p> }
+  }
+  @if (mode === 'new' || (mode === 'edit' && selected)) {
+  <form #mediaForm="ngForm" (ngSubmit)="save()" class="report-form">
+    <h3>{{ selected ? 'Bildangaben bearbeiten' : 'Bild hochladen' }}</h3>
+    @if (selected?.status === 'PUBLISHED') {
+      <aside>Aenderungen an diesem Bild sind nach dem Speichern sofort oeffentlich.</aside>
+    }
+    @if (!selected) {
+      <label for="media-file">Bilddatei</label>
+      <input id="media-file" type="file" accept="image/jpeg,image/png,image/webp" (change)="pickFile($event)" [disabled]="busy()">
+      @if (file) { <p>{{ file.name }}</p> }
+    }
+    <label for="media-category">Galerie</label>
+    <select id="media-category" name="mediaCategory" [(ngModel)]="category" [disabled]="busy()">
+      <option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option><option value="TRAVEL">Reiseberichte</option>
+    </select>
+    <label for="media-title">Bildtitel</label>
+    <input id="media-title" name="mediaTitle" [(ngModel)]="title" required maxlength="200" [disabled]="busy()">
+    <label for="media-alt">Alternativtext (beschreibt das Bild fuer Screenreader)</label>
+    <input id="media-alt" name="mediaAlt" [(ngModel)]="altText" required maxlength="500" [disabled]="busy()">
+    <label for="media-description">Bildbeschreibung (optional)</label>
+    <textarea id="media-description" name="mediaDescription" [(ngModel)]="description" maxlength="2000" [disabled]="busy()"></textarea>
+    <p class="hint">Fuer Sammy und Meine Kreationen die separate Sortieransicht verwenden, statt Zahlen einzeln anzupassen.</p>
+    <label for="media-order">Sortierwert (erweitert; kleinere Zahl zuerst, bei Gleichstand neueste Bilder zuerst)</label>
+    <input id="media-order" name="mediaOrder" type="number" [(ngModel)]="sortOrder" min="0" max="1000000" required [disabled]="busy()">
+    <button type="submit" [disabled]="busy() || !!queue?.running() || mediaForm.invalid || (!selected && !file)">{{ busy() ? 'Bitte warten ...' : 'Bild speichern' }}</button>
+    @if (dirty()) { <p class="hint">Nicht gespeicherte Bildangaben.</p> }
+    <a [routerLink]="basePath">Abbrechen und zurueck zur Bildliste</a>
+  </form>
+  }
+  @if (mode === 'edit' && !selected && !busy()) {
+    <p>Die Bildangaben konnten nicht geladen werden. Bitte zur Bildliste zurueckkehren und das Bild erneut oeffnen.</p>
+  }
+  @if (mode === 'list') {
+  @if (!gallery) {
+  <label for="media-filter">Galerie filtern</label>
+  <select id="media-filter" [ngModel]="filter" (ngModelChange)="filter = $event; reload()" [disabled]="busy()">
+    <option value="">Alle Bilder</option><option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option><option value="TRAVEL">Reiseberichte</option>
+  </select>
+  }
+  <button type="button" (click)="reload()" [disabled]="busy()">Bildliste neu laden</button>
+  @if (!list().total && !busy()) { <p>Noch keine Bilder in dieser Auswahl.</p> }
+  <ul class="media-list">
+    @for (asset of list().items; track asset.id) {
+      <li>
+        <img [src]="'/api/admin/media/' + asset.id + '/image'" [alt]="asset.altText" loading="lazy" (error)="error.set('Eine Bildvorschau konnte nicht geladen werden. Bitte Backend und Upload-Speicher pruefen.')">
+        <div>
+          <h3>{{ asset.title }}</h3>
+          <p>{{ asset.category === 'DRAWING' ? 'Meine Kreationen' : asset.category === 'SAMMY' ? 'Sammy' : 'Reiseberichte (Veroeffentlichung ueber Bericht)' }} · {{ asset.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }} · Sortierung {{ asset.sortOrder }}</p>
+          <div class="actions">
+            <button type="button" (click)="edit(asset)" [disabled]="busy()">Bildangaben bearbeiten</button>
+            @if (asset.status === 'DRAFT') {
+              @if (asset.category !== 'TRAVEL') {
+                <button type="button" (click)="action(asset, 'publish')" [disabled]="busy() || dirty()">Bild veroeffentlichen</button>
+              }
+              <button type="button" class="danger" (click)="action(asset, 'delete')" [disabled]="busy() || dirty()">Bild loeschen</button>
+            } @else {
+              <button type="button" class="secondary" (click)="action(asset, 'unpublish')" [disabled]="busy() || dirty()">Bild zuruecknehmen</button>
+            }
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
+  <div class="actions">
+    <button type="button" (click)="reload(page - 1)" [disabled]="busy() || page <= 1">Vorherige Bildseite</button>
+    <span>Seite {{ list().page }} · {{ list().total }} Bilder</span>
+    <button type="button" (click)="reload(page + 1)" [disabled]="busy() || page * 20 >= list().total">Naechste Bildseite</button>
+  </div>
+  }
+</section>

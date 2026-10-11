@@ -1,0 +1,23 @@
+---
+const { category } = Astro.props;
+---
+<div data-gallery={category}>
+  <p data-gallery-status role="status">Bilder werden geladen ...</p>
+  <div data-gallery-items class="gallery-grid"></div>
+  <div class="pagination">
+    <button data-gallery-previous type="button" disabled>Vorherige Seite</button>
+    <span data-gallery-page>Seite 1</span>
+    <button data-gallery-next type="button" disabled>Naechste Seite</button>
+    <button data-gallery-retry type="button" hidden>Erneut versuchen</button>
+  </div>
+</div>
+<noscript>Bitte JavaScript aktivieren, um die aktuelle Galerie zu sehen.</noscript>
+<script>
+  import '../scripts/gallery';
+</script>
+<style is:global>
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 1.5rem; }
+  .gallery-grid figure { margin: 0; padding: 1rem; background: white; border: 1px solid #d4ddd4; border-radius: .75rem; }
+  .gallery-grid img { width: 100%; height: 300px; object-fit: contain; }
+  .gallery-grid figcaption { overflow-wrap: anywhere; }
+</style>

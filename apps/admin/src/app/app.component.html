@@ -1,0 +1,44 @@
+<header>
+  <strong>olconet</strong><span>Interne Verwaltung</span>
+  @if (auth.user(); as user) {
+    <span class="account">{{ user.displayName }}</span>
+    <button type="button" (click)="logout()" [disabled]="busy()">Abmelden</button>
+  }
+</header>
+@if (auth.user() && !loading()) {
+  <nav class="admin-nav" aria-label="Verwaltungsbereiche">
+    <a routerLink="/uebersicht" routerLinkActive="active" ariaCurrentWhenActive="page">Uebersicht</a>
+    <a routerLink="/reiseberichte" routerLinkActive="active" ariaCurrentWhenActive="page">Reiseberichte</a>
+    <a routerLink="/kreationen" routerLinkActive="active" ariaCurrentWhenActive="page">Meine Kreationen</a>
+    <a routerLink="/sammy" routerLinkActive="active" ariaCurrentWhenActive="page">Sammy</a>
+    <a routerLink="/bildbibliothek" routerLinkActive="active" ariaCurrentWhenActive="page">Bildbibliothek</a>
+  </nav>
+}
+<main>
+  @if (loading()) {
+    <p role="status">Sitzung wird geprueft ...</p>
+  } @else {
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+    @if (auth.user(); as user) {
+      <router-outlet (activate)="activate($event)" (deactivate)="activate(null)" />
+    } @else {
+      <section class="login">
+        <h1>Anmelden</h1>
+        <p>Verwaltungskonten werden ausschliesslich durch die Betreiberin eingerichtet.</p>
+        <form #loginForm="ngForm" (ngSubmit)="login()">
+          <label for="email">E-Mail-Adresse</label>
+          <input id="email" name="email" type="email" autocomplete="username" required maxlength="254" [(ngModel)]="email" [disabled]="busy()">
+          <label for="password">Passwort</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128" [(ngModel)]="password" [disabled]="busy()">
+          <button type="submit" [disabled]="busy() || loginForm.invalid">{{ busy() ? 'Anmeldung laeuft ...' : 'Anmelden' }}</button>
+        </form>
+        <p>Sitzungen enden nach acht Stunden oder beim Abmelden.</p>
+        @if (error()) {
+          <button type="button" class="secondary" (click)="restore()" [disabled]="busy()">Sitzung erneut pruefen</button>
+        }
+      </section>
+    }
+  }
+</main>

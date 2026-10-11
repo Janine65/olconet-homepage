@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.astro/
+.angular/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+apps/backend/src/generated/
+olconet-images.tar
+uploads/

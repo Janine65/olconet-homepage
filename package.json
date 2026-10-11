@@ -1,0 +1,18 @@
+{
+  "name": "olconet-homepage",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.16.0",
+  "engines": { "node": ">=24.15.0 <25" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm --filter @olconet/backend db:generate && pnpm -r build",
+    "check": "pnpm --filter @olconet/backend db:generate && pnpm -r check",
+    "test": "node --test infrastructure/static-server.test.mjs && pnpm --filter @olconet/backend test",
+    "test:docker": "node --test infrastructure/compose.test.mjs",
+    "test:integration": "node infrastructure/run-auth-integration.mjs",
+    "db:generate": "pnpm --filter @olconet/backend db:generate",
+    "db:migrate": "pnpm --filter @olconet/backend db:migrate",
+    "db:deploy": "pnpm --filter @olconet/backend db:deploy"
+  }
+}

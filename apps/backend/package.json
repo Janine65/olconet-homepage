@@ -1,0 +1,41 @@
+{
+  "name": "@olconet/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "test": "pnpm db:generate && tsx --test test/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "admin:create": "tsx src/cli/create-admin.ts",
+    "test:integration": "pnpm db:generate && tsx --test --test-concurrency=1 integration/*.test.ts"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "8.7.3",
+    "@nestjs/common": "11.2.7",
+    "@nestjs/core": "11.2.7",
+    "@nestjs/platform-express": "11.2.7",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.23.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sanitize-html": "2.18.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/multer": "^2.0.0",
+    "@types/sanitize-html": "2.16.2",
+    "@types/node": "^24.19.2",
+    "prisma": "7.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "6.0.3"
+  }
+}

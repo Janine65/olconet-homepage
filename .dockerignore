@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.astro
+**/.angular
+**/.env
+**/.env.*
+**/src/generated
+.git
+**/*.log
+infrastructure/env.*.example
+olconet-images.tar
+**/uploads

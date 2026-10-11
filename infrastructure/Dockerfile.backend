@@ -1,0 +1,25 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.16.0 --activate
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/homepage/package.json apps/homepage/package.json
+COPY apps/admin/package.json apps/admin/package.json
+COPY apps/backend/package.json apps/backend/package.json
+RUN pnpm install --frozen-lockfile --filter @olconet/backend...
+COPY apps/backend/ apps/backend/
+RUN pnpm --filter @olconet/backend db:generate && pnpm --filter @olconet/backend build
+
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production PORT=8080
+# Prisma CLI bleibt fuer den separaten Migrationsjob verfuegbar.
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=build /app/apps/backend/dist ./apps/backend/dist
+COPY --from=build /app/apps/backend/prisma ./apps/backend/prisma
+COPY --from=build /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
+WORKDIR /app/apps/backend
+RUN mkdir -p /data/uploads && chown 1001:1001 /data/uploads && chmod 700 /data/uploads
+USER 1001
+EXPOSE 8080
+CMD ["node", "dist/main.js"]

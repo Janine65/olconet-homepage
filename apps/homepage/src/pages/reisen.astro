@@ -1,0 +1,20 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Reiseberichte">
+  <h1>Reiseberichte</h1>
+  <p>Neue Orte, kleine Abenteuer und Erinnerungen. <a href="/api/public/reports/rss">Reiseberichte als RSS-Feed abonnieren</a></p>
+  <p id="reports-status" role="status">Reiseberichte werden geladen ...</p>
+  <div id="reports-list" class="cards"></div>
+  <div class="pagination">
+    <button id="reports-previous" type="button" disabled>Vorherige Seite</button>
+    <span id="reports-page"></span>
+    <button id="reports-next" type="button" disabled>Naechste Seite</button>
+    <button id="reports-retry" type="button" hidden>Erneut versuchen</button>
+  </div>
+  <noscript><p>Fuer die aktuelle Berichtsliste bitte JavaScript aktivieren oder den <a href="/api/public/reports/rss">RSS-Feed</a> verwenden.</p></noscript>
+</Layout>
+<script>
+  import { loadReportList } from '../scripts/reports';
+  loadReportList();
+</script>

@@ -1,0 +1,24 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.16.0 --activate
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/homepage/package.json apps/homepage/package.json
+COPY apps/admin/package.json apps/admin/package.json
+COPY apps/backend/package.json apps/backend/package.json
+ARG APP=homepage
+RUN pnpm install --frozen-lockfile --filter @olconet/${APP}...
+COPY apps/ apps/
+RUN pnpm --filter @olconet/${APP} build
+# Beide Build-Tools haben unterschiedliche Ausgabeordner.
+RUN if [ "$APP" = "homepage" ]; then cp -r apps/homepage/dist /site; \
+    elif [ "$APP" = "admin" ]; then cp -r apps/admin/dist/admin/browser /site; \
+    else echo "APP must be homepage or admin" >&2; exit 1; fi
+
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production PORT=8080
+COPY --from=build /site ./public
+COPY infrastructure/static-server.mjs ./static-server.mjs
+USER 1001
+EXPOSE 8080
+CMD ["node", "static-server.mjs", "public"]
