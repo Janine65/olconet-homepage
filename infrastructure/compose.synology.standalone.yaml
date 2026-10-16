@@ -16,7 +16,7 @@ x-runtime: &runtime
 
 x-backend: &backend
   <<: *runtime
-  image: ${IMAGE_PREFIX:-olconet}/backend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+  image: ${IMAGE_PREFIX:-olconet}/olconet-backend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
   networks: [olconet, back-tier]
   environment:
     NODE_ENV: production
@@ -29,7 +29,8 @@ x-backend: &backend
 services:
   homepage:
     <<: *runtime
-    image: ${IMAGE_PREFIX:-olconet}/homepage:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    container_name: olconet-homepage
+    image: ${IMAGE_PREFIX:-olconet}/olconet-homepage:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
     ports: ["127.0.0.1:18431:8080"]
     environment:
       API_PROXY_URL: http://backend:8080
@@ -43,7 +44,8 @@ services:
 
   admin:
     <<: *runtime
-    image: ${IMAGE_PREFIX:-olconet}/admin:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    container_name: olconet-frontend
+    image: ${IMAGE_PREFIX:-olconet}/olconet-frontend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
     ports: ["127.0.0.1:18432:8080"]
     environment:
       API_PROXY_URL: http://backend:8080
@@ -51,6 +53,7 @@ services:
 
   backend:
     <<: *backend
+    container_name: olconet-backend
     volumes:
       - type: bind
         source: /volume1/server/olconet/uploads

@@ -56,6 +56,25 @@ function config(environment, standalone = false) {
   return JSON.parse(result.stdout);
 }
 
+test('Mac und Synology verwenden die gewuenschten Image- und Containernamen', () => {
+  for (const [environment, standalone] of [['mac', false], ['synology', false], ['synology', true]]) {
+    const { services } = config(environment, standalone);
+    const tag = environment === 'mac' ? 'test' : 'latest';
+    for (const [service, name] of [
+      ['backend', 'olconet-backend'], ['admin', 'olconet-frontend'], ['homepage', 'olconet-homepage'],
+    ]) {
+      assert.equal(services[service].container_name, name);
+      assert.equal(services[service].image, `janine65/${name}:${tag}`);
+    }
+    for (const tool of ['migrate', 'create-admin']) {
+      assert.equal(services[tool].image, services.backend.image);
+      assert.equal(services[tool].container_name, undefined, 'CLI-Container duerfen den festen Backend-Namen nicht uebernehmen.');
+    }
+    assert.equal(services.admin.environment.API_PROXY_URL, 'http://backend:8080');
+    assert.equal(services.homepage.environment.API_PROXY_URL, 'http://backend:8080');
+  }
+});
+
 for (const environment of ['mac', 'synology']) {
   test(`${environment}: App-Ports sind hostlokal und Migrationen starten nur explizit`, () => {
     const { services, volumes } = config(environment);

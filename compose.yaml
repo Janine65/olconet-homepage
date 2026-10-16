@@ -16,7 +16,7 @@ x-runtime: &runtime
 
 x-backend: &backend
   <<: *runtime
-  image: ${IMAGE_PREFIX:-olconet}/backend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+  image: ${IMAGE_PREFIX:-olconet}/olconet-backend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
   build:
     context: .
     dockerfile: infrastructure/Dockerfile.backend
@@ -31,7 +31,8 @@ x-backend: &backend
 services:
   homepage:
     <<: *runtime
-    image: ${IMAGE_PREFIX:-olconet}/homepage:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    container_name: olconet-homepage
+    image: ${IMAGE_PREFIX:-olconet}/olconet-homepage:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
     build:
       context: .
       dockerfile: infrastructure/Dockerfile.frontend
@@ -49,7 +50,8 @@ services:
 
   admin:
     <<: *runtime
-    image: ${IMAGE_PREFIX:-olconet}/admin:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
+    container_name: olconet-frontend
+    image: ${IMAGE_PREFIX:-olconet}/olconet-frontend:${IMAGE_TAG:?IMAGE_TAG muss gesetzt sein}
     build:
       context: .
       dockerfile: infrastructure/Dockerfile.frontend
@@ -61,6 +63,7 @@ services:
 
   backend:
     <<: *backend
+    container_name: olconet-backend
     volumes: [uploads:/data/uploads]
     ports: ["127.0.0.1:18433:8080"]
     healthcheck: *health

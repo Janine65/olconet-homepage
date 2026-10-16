@@ -694,11 +694,23 @@ Docker Desktop mit Compose auf dem Mac; Docker/Container Manager mit
 Compose-Unterstuetzung auf Synology. Der Mac verwendet ARM64, die Synology
 Intel/AMD (linux/amd64). Build-Kontext ist das Projektwurzelverzeichnis:
 
-| App | Dockerfile | Build-Argument |
-| --- | --- | --- |
-| Homepage | `infrastructure/Dockerfile.frontend` | `APP=homepage` |
-| Verwaltung | `infrastructure/Dockerfile.frontend` | `APP=admin` |
-| Backend | `infrastructure/Dockerfile.backend` | keines |
+| App | Image- und Containername | Dockerfile | Build-Argument |
+| --- | --- | --- | --- |
+| Homepage | `olconet-homepage` | `infrastructure/Dockerfile.frontend` | `APP=homepage` |
+| Verwaltung | `olconet-frontend` | `infrastructure/Dockerfile.frontend` | `APP=admin` |
+| Backend | `olconet-backend` | `infrastructure/Dockerfile.backend` | keines |
+
+Images erhalten weiterhin den konfigurierten Registry-Namespace und Tag,
+zum Beispiel `janine65/olconet-frontend:latest`. Die Containernamen gelten
+auf Mac und Synology exakt wie in der Tabelle. Wegen der festen Namen kann
+pro Docker-Host nur ein solcher Stack gleichzeitig laufen.
+Die internen Compose-Servicenamen bleiben `homepage`, `admin` und `backend`;
+bestehende Package-Scripts und die interne API-Verbindung bleiben unveraendert.
+Migration und Kontoeinrichtung verwenden ebenfalls das Image
+`olconet-backend`, erhalten aber eigene, automatisch generierte Containernamen.
+Nach der Umbenennung Images neu bauen und beim Registry-Transfer neu pushen;
+bestehende App-Container werden beim naechsten Compose-Start neu erstellt.
+Datenbank und Upload-Mounts bleiben unveraendert.
 
 Die drei App-Container laufen als Nicht-Root mit schreibgeschuetztem
 Dateisystem und temporaerem `/tmp`. Intern verwenden sie Port 8080; auf dem
@@ -847,7 +859,7 @@ Alternativ fuer den Transfer per Archiv statt Registry:
 
 ```sh
 docker compose --env-file .env.docker.synology -f compose.yaml build homepage admin backend
-docker image save -o olconet-images.tar olconet/homepage:0.1.0 olconet/admin:0.1.0 olconet/backend:0.1.0
+docker image save -o olconet-images.tar janine65/olconet-homepage:latest janine65/olconet-frontend:latest janine65/olconet-backend:latest
 ```
 
 Image-Namen/Tags im `save`-Befehl bei abweichender Konfiguration anpassen.
