@@ -1,5 +1,7 @@
 FROM node:24-bookworm-slim AS build
-WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.16.0 --activate
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/homepage/package.json apps/homepage/package.json
@@ -10,7 +12,9 @@ COPY apps/backend/ apps/backend/
 RUN pnpm --filter @olconet/backend db:generate && pnpm --filter @olconet/backend build
 
 FROM node:24-bookworm-slim AS runtime
-WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*WORKDIR /app
 ENV NODE_ENV=production PORT=8080
 # Prisma CLI bleibt fuer den separaten Migrationsjob verfuegbar.
 COPY --from=build /app/node_modules ./node_modules

@@ -21,6 +21,6 @@
     "db:generate": "pnpm --filter @olconet/backend db:generate",
     "db:migrate": "pnpm --filter @olconet/backend db:migrate",
     "db:deploy": "pnpm --filter @olconet/backend db:deploy",
-    "postversion": "git push && git push --tag"
+    "postversion": "git push && git push --tag && pnpm docker:build:mac && pnpm docker:run:mac"
   }
 }
