@@ -1,6 +1,12 @@
 services:
   backend:
     extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - type: bind
+        source: /Users/janinefranken/Development/JS/olconet-homepage/apps/backend/uploads
+        target: /data/uploads
+        bind:
+          create_host_path: false
   migrate:
     extra_hosts: ["host.docker.internal:host-gateway"]
   create-admin:

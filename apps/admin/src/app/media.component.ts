@@ -59,6 +59,7 @@ export class MediaComponent implements OnInit {
   }
   private snapshot() { return JSON.stringify([this.title, this.altText, this.description, this.titleEn, this.altTextEn, this.descriptionEn, this.category, this.sortOrder]); }
   dirty() { return !!this.file || this.snapshot() !== this.initial; }
+  metadataLocked() { return this.busy() || !!this.queue?.pending() || !!this.queue?.running(); }
   canLeave(includeQueue = true) {
     if (this.queue?.running()) { this.error.set('Bitte den aktuellen Upload abwarten.'); return false; }
     if (includeQueue && this.queue && !this.queue.canLeave()) return false;
@@ -76,6 +77,14 @@ export class MediaComponent implements OnInit {
     this.list.set(result);
   }
   uploaded() { this.changed.emit(); }
+  async reloadGroup(added = false) {
+    if (!this.selected || this.dirty() || (!added && this.queue?.running())) return;
+    const id = this.selected.id;
+    await this.run(async () => {
+      this.accept(await this.auth.request<Asset>(`/api/admin/media/${id}`));
+      if (added) { this.success.set('Fotos zur Fotogruppe hinzugefuegt.'); this.changed.emit(); }
+    });
+  }
   openSorting(category: 'DRAWING' | 'SAMMY') {
     void this.router.navigateByUrl(category === 'SAMMY' ? '/sammy/sortieren' : '/kreationen/sortieren');
   }
@@ -122,6 +131,7 @@ export class MediaComponent implements OnInit {
   }
   async save() {
     if (this.queue?.running()) return;
+    if (this.queue?.pending()) { this.error.set('Bitte die Foto-Warteschlange zuerst abschliessen oder leeren.'); return; }
     let saved = false;
     await this.run(async () => {
       const subject = this.selected?.children.length ? 'Fotogruppe' : 'Bild';

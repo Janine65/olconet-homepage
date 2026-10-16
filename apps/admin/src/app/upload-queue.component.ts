@@ -4,6 +4,9 @@ import { AuthService } from './auth.service';
 
 export type MediaCategory = 'DRAWING' | 'SAMMY' | 'TRAVEL';
 export interface UploadedAsset { id: string; title: string; altText: string; titleEn?: string; altTextEn?: string; }
+interface ExistingPhotoGroup extends UploadedAsset {
+  revision: number; category: MediaCategory; status: 'DRAFT' | 'PUBLISHED'; children: { id: string }[];
+}
 interface QueueEntry {
   key: string; file: File | null; name: string; title: string; altText: string; category: MediaCategory;
   previewUrl: string | null; previewError: boolean;
@@ -16,17 +19,22 @@ interface QueueEntry {
   selector: 'app-upload-queue', standalone: true, imports: [FormsModule],
   template: `
     <div class="upload-queue">
-      <h3>{{ group ? 'Multi-Fotogruppe hochladen' : 'Mehrere Bilder hochladen' }}</h3>
-      <p>Bis zu 100 Dateien auswaehlen. {{ group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamem Titel und Alternativtext.' : 'Titel und Alternativtext je Bild ergaenzen.' }} Dann Warteschlange starten.
+      <h3>{{ appendTo ? 'Fotos zur Fotogruppe hinzufuegen' : group ? 'Multi-Fotogruppe hochladen' : 'Mehrere Bilder hochladen' }}</h3>
+      <p>Bis zu {{ capacity() }} Dateien auswaehlen. {{ appendTo ? 'Neue Fotos werden hinten an die bestehende Gruppe angehaengt.' : group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamem Titel und Alternativtext.' : 'Titel und Alternativtext je Bild ergaenzen.' }} Dann Warteschlange starten.
         Jede Datei wird einzeln geprueft (maximal 10 MiB). Erfolgreiche Uploads bleiben bei einem Fehler erhalten.</p>
       @if (group) {
+        @if (appendTo) {
+        <p class="hint">Titel, Alternativtext und Beschreibungen einschliesslich englischer Uebersetzungen werden von der gespeicherten Gruppe uebernommen.
+          {{ appendTo.status === 'PUBLISHED' ? 'Die neuen Fotos werden nach dem Hinzufuegen sofort oeffentlich sichtbar.' : 'Die neuen Fotos bleiben mit der Gruppe privat.' }}</p>
+        } @else {
         <label>Gemeinsamer Titel <input [(ngModel)]="groupTitle" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
         <label>Gemeinsamer Alternativtext <input [(ngModel)]="groupAltText" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="locked() || disabled"></label>
         <label>Gemeinsamer Titel (Englisch, optional) <input lang="en" [(ngModel)]="groupTitleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
         <label>Gemeinsamer Alternativtext (Englisch, optional) <input lang="en" [(ngModel)]="groupAltTextEn" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="locked() || disabled"></label>
         <p class="hint">Die Gruppe wird nach allen erfolgreichen Uploads gespeichert. Bei Fehlern bitte erneut versuchen.
           Noch nicht gruppierte Uploads bleiben als private Einzelentwuerfe in der Bildliste erhalten.</p>
-        @if (groupSaved()) { <p class="success" role="status">Fotogruppe gespeichert. Sie kann in der Bildliste gemeinsam bearbeitet und veroeffentlicht werden.</p> }
+        }
+        @if (groupSaved()) { <p class="success" role="status">{{ appendTo ? 'Fotos zur Fotogruppe hinzugefuegt.' : 'Fotogruppe gespeichert. Sie kann in der Bildliste gemeinsam bearbeitet und veroeffentlicht werden.' }}</p> }
       }
       <label [for]="inputId">Bilddateien</label>
       <input [id]="inputId" type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="add($event)" [disabled]="running() || disabled || (group && groupingStarted())">
@@ -59,7 +67,7 @@ interface QueueEntry {
             @if (entry.state === 'failed') {
               <button type="button" (click)="retry(entry)" [disabled]="running() || disabled">Dieses Bild erneut versuchen</button>
             }
-            <button type="button" class="secondary" (click)="remove(entry)" [disabled]="running() || disabled || (group && entry.state === 'done')">Aus Warteschlange entfernen</button>
+            <button type="button" class="secondary" (click)="remove(entry)" [disabled]="running() || disabled || (group && entry.state === 'done' && (!appendTo || groupSaved()))">Aus Warteschlange entfernen</button>
           </li>
         }
       </ul>
@@ -79,8 +87,10 @@ export class UploadQueueComponent implements OnDestroy {
   @Input() group = false;
   @Input() disabled = false;
   @Input() inputId = 'upload-files';
+  @Input() appendTo: ExistingPhotoGroup | null = null;
   @Output() uploaded = new EventEmitter<UploadedAsset>();
   @Output() finished = new EventEmitter<void>();
+  @Output() groupUpdated = new EventEmitter<void>();
   private readonly auth = inject(AuthService);
   readonly entries = signal<QueueEntry[]>([]);
   readonly running = signal(false);
@@ -94,6 +104,7 @@ export class UploadQueueComponent implements OnDestroy {
   private paused = false;
   ngOnDestroy() { this.paused = true; this.entries().forEach(entry => this.releasePreview(entry)); }
   waiting() { return this.entries().some(entry => entry.state === 'waiting'); }
+  capacity() { return this.appendTo ? 100 - this.appendTo.children.length - 1 : 100; }
   locked() { return this.running() || this.entries().some(entry => entry.attempted); }
   pending() { return this.entries().some(entry => entry.state !== 'done') || (this.group && !!this.entries().length && !this.groupSaved()); }
   canLeave() {
@@ -110,7 +121,11 @@ export class UploadQueueComponent implements OnDestroy {
     input.value = '';
     this.error.set('');
     if (this.group && this.groupingStarted()) return;
-    if (this.entries().length + files.length > 100) { this.error.set('Maximal 100 Eintraege pro Warteschlange. Bitte erledigte Eintraege entfernen.'); return; }
+    if (this.entries().length + files.length > this.capacity()) {
+      this.error.set(this.appendTo ? `Es koennen noch maximal ${this.capacity()} Fotos zur Gruppe hinzugefuegt werden.` :
+        'Maximal 100 Eintraege pro Warteschlange. Bitte erledigte Eintraege entfernen.');
+      return;
+    }
     this.entries.update(entries => [...entries, ...files.map(file => ({
       key: crypto.randomUUID(), file, name: file.name, title: this.category === 'TRAVEL' ? '' : file.name.replace(/\.[^.]+$/, '').slice(0, 200),
       previewUrl: this.category === 'TRAVEL' ? URL.createObjectURL(file) : null, previewError: false,
@@ -119,9 +134,10 @@ export class UploadQueueComponent implements OnDestroy {
     }))]);
   }
   remove(entry: QueueEntry) {
-    if (this.running() || (this.group && entry.state === 'done')) return;
+    if (this.running() || (this.group && entry.state === 'done' && (!this.appendTo || this.groupSaved()))) return;
     this.releasePreview(entry);
     this.entries.update(entries => entries.filter(item => item !== entry));
+    if (this.appendTo && !this.entries().length) this.groupingStarted.set(false);
   }
   clearDone() {
     if (this.group && !this.groupSaved()) return;
@@ -150,16 +166,24 @@ export class UploadQueueComponent implements OnDestroy {
     if (this.running() || this.disabled) return;
     if (this.group) {
       if (this.groupSaved()) return;
-      if ((this.category !== 'SAMMY' && this.category !== 'DRAWING') || this.entries().length < 2 ||
-        !this.groupTitle.trim() || this.groupTitle.trim().length > 200 ||
-        !this.groupAltText.trim() || this.groupAltText.trim().length > 500 ||
-        this.groupTitleEn.trim().length > 200 || this.groupAltTextEn.trim().length > 500) {
-        this.error.set('Bitte 2 bis 100 Fotos, einen gemeinsamen Titel (1-200 Zeichen) und Alternativtext (1-500 Zeichen) fuer Sammy oder Meine Kreationen angeben.');
+      const metadata = this.appendTo ?? { title: this.groupTitle, altText: this.groupAltText,
+        titleEn: this.groupTitleEn, altTextEn: this.groupAltTextEn, category: this.category };
+      if ((metadata.category !== 'SAMMY' && metadata.category !== 'DRAWING') || this.entries().length < (this.appendTo ? 1 : 2) ||
+        !metadata.title.trim() || metadata.title.trim().length > 200 ||
+        !metadata.altText.trim() || metadata.altText.trim().length > 500 ||
+        (metadata.titleEn ?? '').trim().length > 200 || (metadata.altTextEn ?? '').trim().length > 500) {
+        this.error.set('Bitte Fotos und gueltige gemeinsame Angaben fuer Sammy oder Meine Kreationen angeben (neue Gruppe: mindestens 2 Fotos).');
+        return;
+      }
+      const target = this.appendTo;
+      if (target && this.entries().filter(entry => !target.children.some(photo => photo.id === entry.assetId)).length > this.capacity()) {
+        this.error.set('Die Fotogruppe darf insgesamt maximal 100 Fotos enthalten. Bitte ueberzaehlige Warteschlangeneintraege entfernen.');
         return;
       }
       for (const entry of this.entries()) {
-        entry.title = this.groupTitle; entry.altText = this.groupAltText; entry.category = this.category;
-        entry.titleEn = this.groupTitleEn; entry.altTextEn = this.groupAltTextEn;
+        if (entry.attempted) continue;
+        entry.title = metadata.title; entry.altText = metadata.altText; entry.category = metadata.category;
+        entry.titleEn = metadata.titleEn ?? ''; entry.altTextEn = metadata.altTextEn ?? '';
       }
     }
     this.error.set('');
@@ -200,8 +224,11 @@ export class UploadQueueComponent implements OnDestroy {
       if (this.group && this.entries().every(entry => entry.state === 'done')) {
         this.groupingStarted.set(true);
         try {
-          await this.auth.request('/api/admin/media/group', { ids: this.entries().map(entry => entry.assetId) });
+          await this.auth.request(this.appendTo ? `/api/admin/media/${this.appendTo.id}/photos` : '/api/admin/media/group', {
+            ids: this.entries().map(entry => entry.assetId), ...(this.appendTo ? { revision: this.appendTo.revision } : {}),
+          });
           this.groupSaved.set(true);
+          if (this.appendTo) this.groupUpdated.emit();
         } catch (error) {
           this.error.set(error instanceof Error ? error.message : 'Die Fotogruppe konnte nicht gespeichert werden. Bitte erneut versuchen.');
         }

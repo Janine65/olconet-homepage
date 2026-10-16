@@ -1,6 +1,49 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
+
+test('Package-Scripts bauen und starten Mac-Images bzw. bauen und pushen Synology-Images in der richtigen Reihenfolge', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'olconet-docker-scripts-'));
+  t.after(() => rmSync(directory, { recursive: true }));
+  const log = join(directory, 'commands.jsonl');
+  writeFileSync(join(directory, 'docker'), `#!${process.execPath}
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.DOCKER_SCRIPT_TEST_LOG, JSON.stringify(args) + '\\n');
+if (args.includes(process.env.DOCKER_SCRIPT_TEST_FAIL)) process.exit(9);
+`, { mode: 0o700 });
+  const run = (name, fail = '') => {
+    writeFileSync(log, '');
+    const result = spawnSync('pnpm', ['run', name], { encoding: 'utf8', env: {
+      ...process.env, PATH: directory + ':' + process.env.PATH,
+      DOCKER_SCRIPT_TEST_LOG: log, DOCKER_SCRIPT_TEST_FAIL: fail,
+    } });
+    const commands = readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+    return { result, commands };
+  };
+  const mac = ['compose', '--env-file', '.env.docker.mac', '-f', 'compose.yaml', '-f', 'compose.mac.yaml'];
+  const synology = ['compose', '--env-file', '.env.docker.synology', '-f', 'compose.yaml'];
+  const services = ['homepage', 'admin', 'backend'];
+  for (const [name, expected] of [
+    ['docker:build:mac', [[...mac, 'build', ...services]]],
+    ['docker:run:mac', [[...mac, 'run', '--rm', '--no-deps', 'migrate'], [...mac, 'up', '-d', '--wait', '--no-build', ...services]]],
+    ['docker:build:synology', [[...synology, 'build', ...services]]],
+    ['docker:push:synology', [[...synology, 'push', ...services]]],
+    ['docker:build-push:synology', [[...synology, 'build', ...services], [...synology, 'push', ...services]]],
+  ]) {
+    const { result, commands } = run(name);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.deepEqual(commands, expected, name);
+  }
+  for (const [name, fail] of [['docker:run:mac', 'run'], ['docker:build-push:synology', 'build']]) {
+    const { result, commands } = run(name, fail);
+    assert.notEqual(result.status, 0);
+    assert.equal(commands.length, 1, 'Nach Fehlern duerfen weder Container gestartet noch Images gepusht werden.');
+  }
+});
 
 function config(environment, standalone = false) {
   const result = spawnSync('docker', [

@@ -30,6 +30,9 @@ export class MediaController {
   @Post('group')
   group(@Body() body: unknown) { return this.media.group(body); }
 
+  @Post(':id/photos')
+  appendPhotos(@Param('id') id: string, @Body() body: unknown) { return this.media.appendPhotos(reportId(id), body); }
+
   @Get(':id/image')
   async image(@Param('id') id: string) { return imageResponse(await this.media.image(reportId(id), false)); }
 

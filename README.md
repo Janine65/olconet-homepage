@@ -538,12 +538,50 @@ die Warteschlange selbst wird nicht dauerhaft gespeichert.
 Nach **Fotogruppe gespeichert** die erledigten Eintraege entfernen, um
 eine neue Gruppe zu beginnen.
 
+#### Bestehende Fotogruppen erweitern
+
+In **Sammy**, **Meine Kreationen** oder der **Bildbibliothek** eine
+**Fotogruppe bearbeiten**. Unter **Fotos zur Fotogruppe hinzufuegen** eine
+oder mehrere Dateien auswaehlen und die Warteschlange starten. Neue Fotos
+werden in Auswahlreihenfolge hinten angehaengt. Insgesamt sind weiterhin
+maximal **100 Fotos pro Gruppe** erlaubt. Die Gruppe behaelt ihre Position
+in der Galerie und zaehlt weiterhin als ein Eintrag.
+
+Alle neuen Fotos uebernehmen die gespeicherten gemeinsamen Angaben,
+einschliesslich deutscher und englischer Titel, Alternativtexte und
+Beschreibungen. Sie uebernehmen auch den Veroeffentlichungsstatus:
+**Bei bereits veroeffentlichten Gruppen sind sie nach dem erfolgreichen
+Hinzufuegen sofort oeffentlich sichtbar.** Entwurfsgruppen bleiben privat.
+Gruppenangaben vor der Dateiauswahl speichern; waehrend einer offenen
+Warteschlange bleiben sie gegen unbeabsichtigte Aenderungen gesperrt.
+
+Erst nach erfolgreichen Uploads der gesamten Auswahl werden die Fotos
+gemeinsam angehaengt. Fehlerhafte Dateien koennen erneut versucht oder
+aus der Warteschlange entfernt werden. Bei Speicherkonflikten
+**Gespeicherte Fotogruppe neu laden** und die Warteschlange fortsetzen;
+die bereits hochgeladenen Dateien muessen nicht nochmals uebertragen
+werden. Solange das Anhaengen nicht erfolgreich bestaetigt wurde, koennen
+auch erledigte Eintraege aus dieser Warteschlange entfernt werden.
+Entfernen aus der Warteschlange loescht keine Bilddatei und nimmt keine
+bereits erfolgte Gruppenzuordnung zurueck.
+
+Nach Erfolg **Erledigte Eintraege entfernen**, um derselben Gruppe weitere
+Fotos hinzuzufuegen. Bei Abbruch bleiben noch nicht zugeordnete Uploads
+private Einzelentwuerfe in der Bildbibliothek.
+
 Die API `POST /api/admin/media/group` erwartet `{ "ids": ["UUID", "UUID"] }`
 in der gewuenschten Bildreihenfolge. Sie gruppiert ausschliesslich unveraenderte,
 unzugeordnete Entwuerfe gleicher Kategorie mit identischem Titel und Alternativtext.
 Die erste ID ist die gemeinsame Verwaltungs-ID und das erste Foto; die weiteren
 Foto-IDs stehen in `children`. Diese IDs sind nur fuer Bild-URLs vorgesehen;
 Verwaltungsaktionen erfolgen ueber die gemeinsame ID.
+`POST /api/admin/media/:id/photos` erweitert eine bestehende Gruppe mit
+`{ "ids": ["UUID"], "revision": 0 }`. Die IDs bezeichnen unveraenderte,
+unzugeordnete Entwuerfe derselben Kategorie. Die API prueft die aktuelle
+Gruppenrevision und uebernimmt gemeinsame Angaben und Freigabe atomar.
+Wiederholungen desselben bereits angehaengten Batches erzeugen keine
+Duplikate und veraendern die Revision nicht erneut. Diese Erweiterung
+benoetigt keine weitere Datenbankmigration.
 Die neue Datenbankmigration vor dem Backend-Start mit `pnpm db:deploy` anwenden.
 
 ### Mehrere Einzelbilder mit Warteschlange
@@ -601,6 +639,7 @@ fuer ein anderes Bild einen neuen Entwurf hochladen.
 | `POST /api/admin/media` | Multipart-Upload: `file` und JSON-String `metadata` |
 | `GET /api/admin/media/:id/image` | Bildvorschau mit Verwaltungssitzung |
 | `POST /api/admin/media/:id/save` | Metadaten mit aktueller `revision` speichern |
+| `POST /api/admin/media/:id/photos` | Neue Foto-Entwuerfe an eine bestehende Gruppe anhaengen |
 | `POST /api/admin/media/:id/publish` | Bild veroeffentlichen |
 | `POST /api/admin/media/:id/unpublish` | Veroeffentlichung zuruecknehmen |
 | `POST /api/admin/media/:id/delete` | Entwurf und Datei loeschen |
@@ -669,6 +708,24 @@ Migrationscontainer und die Kontoeinrichtungs-CLI. Die Dateien `apps/backend/.en
 `.env.docker.*` (Compose) sind getrennte Konfigurationen.
 
 ### Mac: vorhandenes PostgreSQL
+
+Nach dem einmaligen Einrichten von `.env.docker.mac` koennen die
+Package-Scripts aus dem Projektwurzelverzeichnis verwendet werden:
+
+```sh
+pnpm docker:build:mac
+pnpm docker:run:mac
+```
+
+**Build** baut ausschliesslich Homepage, Verwaltung und Backend mit der
+Plattform und den Image-Namen aus `.env.docker.mac` (Vorlage: `linux/arm64`,
+Tag `test`). **Run** fuehrt zuerst die Datenbankmigrationen mit dem gebauten
+Backend-Image aus und startet nur bei Erfolg die drei App-Container im
+Hintergrund. Es wartet auf deren Healthchecks und baut keine Images neu.
+Ein vorhandenes Verwaltungskonto wird weiterverwendet. Vor dem ersten Run
+die Datenbankverbindung konfigurieren; ein Konto bei Bedarf mit dem unten
+gezeigten `create-admin`-Befehl anlegen. Lokale Dev-Services vorher beenden,
+da dieselben Ports verwendet werden.
 
 ```sh
 cp infrastructure/env.mac.example .env.docker.mac
@@ -766,6 +823,27 @@ und nur fuer den betreibenden Benutzer lesbar machen. `config` ohne
 
 Die App-Images auf dem Mac fuer **linux/amd64** bauen (Docker Desktop
 verwendet dabei Emulation):
+
+Fuer den Registry-Transfer in `.env.docker.synology` `DOCKER_PLATFORM=linux/amd64`,
+den eigenen `IMAGE_PREFIX` (Docker-Hub-Benutzername oder Registry samt Namespace)
+und `IMAGE_TAG` setzen. Vor dem ersten Push bei der Registry anmelden,
+beispielsweise mit `docker login` fuer Docker Hub. Zugangsdaten nicht in
+Package-Scripts oder Env-Vorlagen hinterlegen.
+
+```sh
+pnpm docker:build-push:synology
+```
+
+Das Script baut die drei App-Images und pusht sie nur nach erfolgreichem
+Build. Es startet keine Container und fuehrt keine Migrationen auf dem NAS
+aus. Build und Push lassen sich auch getrennt ausfuehren:
+
+```sh
+pnpm docker:build:synology
+pnpm docker:push:synology
+```
+
+Alternativ fuer den Transfer per Archiv statt Registry:
 
 ```sh
 docker compose --env-file .env.docker.synology -f compose.yaml build homepage admin backend

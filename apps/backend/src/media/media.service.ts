@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { PrismaService } from '../prisma.service';
-import { galleryCategory, mediaCategory, mediaInput, photoGroupInput } from './media.input';
+import { appendGroupInput, galleryCategory, mediaCategory, mediaInput, photoGroupInput } from './media.input';
 import { Prisma } from '../generated/prisma/client';
 import { lockMedia } from './media.lock';
 import { normalizeImage } from './image';
@@ -111,9 +111,13 @@ export class MediaService implements OnModuleInit {
   }
 
   private transactionError(error: unknown): never {
-    if (error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === 'P2034' || (error.code === 'P2010' && ['40001', '40P01'].includes(String(error.meta?.['code']))))) {
-      throw new ConflictException('Die Galerie wurde gleichzeitig geaendert. Bitte neu laden und erneut versuchen.');
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      const adapter = error.meta?.['driverAdapterError'];
+      const cause = adapter && typeof adapter === 'object' && 'cause' in adapter ? adapter.cause : undefined;
+      const code = cause && typeof cause === 'object' && 'originalCode' in cause ? cause.originalCode : error.meta?.['code'];
+      if (error.code === 'P2034' || (error.code === 'P2010' && ['40001', '40P01'].includes(String(code)))) {
+        throw new ConflictException('Die Galerie wurde gleichzeitig geaendert. Bitte neu laden und erneut versuchen.');
+      }
     }
     throw error;
   }
@@ -140,6 +144,43 @@ export class MediaService implements OnModuleInit {
         }
         for (const [position, childId] of ids.slice(1).entries()) {
           await db.mediaAsset.update({ where: { id: childId }, data: { parentId: id, sortOrder: position, revision: { increment: 1 } } });
+        }
+        await db.mediaAsset.update({ where: { id }, data: { revision: { increment: 1 } } });
+        return { id };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) { this.transactionError(error); }
+  }
+
+  async appendPhotos(id: string, body: unknown) {
+    const { ids, revision } = appendGroupInput(body);
+    if (ids.includes(id)) throw new BadRequestException('Das erste Foto der Gruppe darf nicht erneut hinzugefuegt werden.');
+    try {
+      return await this.prisma.$transaction(async db => {
+        await lockMedia(db, this.prisma.databaseSchema, [id, ...ids]);
+        const group = await db.mediaAsset.findUnique({ where: { id },
+          include: { children: { select: { id: true, sortOrder: true } } } });
+        if (!group) throw new NotFoundException('Die Fotogruppe wurde nicht gefunden.');
+        if (group.parentId || group.category === 'TRAVEL' || !group.children.length) {
+          throw new BadRequestException('Fotos koennen nur bestehenden Fotogruppen von Sammy oder Meine Kreationen hinzugefuegt werden.');
+        }
+        if (ids.every(photoId => group.children.some(child => child.id === photoId))) return { id };
+        if (group.revision !== revision) throw new ConflictException('Die Fotogruppe wurde inzwischen geaendert. Bitte die gespeicherte Fotogruppe neu laden und erneut versuchen.');
+        if (group.children.length + 1 + ids.length > 100) throw new BadRequestException('Eine Fotogruppe darf insgesamt maximal 100 Fotos enthalten.');
+        const photos = await db.mediaAsset.findMany({ where: { id: { in: ids } },
+          include: { _count: { select: { children: true, reports: true } } } });
+        if (photos.length !== ids.length) throw new NotFoundException('Ein hinzuzufuegendes Foto wurde nicht gefunden.');
+        if (photos.some(photo => photo.parentId || photo._count.children || photo._count.reports ||
+          photo.status !== 'DRAFT' || photo.revision !== 0 || photo.category !== group.category)) {
+          throw new ConflictException('Nur unveraenderte, unzugeordnete Foto-Entwuerfe derselben Kategorie koennen hinzugefuegt werden.');
+        }
+        const nextOrder = Math.max(...group.children.map(child => child.sortOrder)) + 1;
+        for (const [position, photoId] of ids.entries()) {
+          await db.mediaAsset.update({ where: { id: photoId }, data: {
+            parentId: id, sortOrder: nextOrder + position, revision: { increment: 1 },
+            title: group.title, altText: group.altText, description: group.description,
+            titleEn: group.titleEn, altTextEn: group.altTextEn, descriptionEn: group.descriptionEn,
+            category: group.category, status: group.status, publishedAt: group.publishedAt,
+          } });
         }
         await db.mediaAsset.update({ where: { id }, data: { revision: { increment: 1 } } });
         return { id };
@@ -199,7 +240,7 @@ export class MediaService implements OnModuleInit {
       const { sortOrder: _sortOrder, ...shared } = data;
       await db.mediaAsset.updateMany({ where: { parentId: id }, data: { ...shared, revision: { increment: 1 } } });
       return { saved: true };
-    });
+    }).catch(error => this.transactionError(error));
   }
 
   async status(id: string, revision: number, published: boolean) {
@@ -215,7 +256,7 @@ export class MediaService implements OnModuleInit {
         data: { status: published ? 'PUBLISHED' : 'DRAFT', publishedAt: published ? new Date() : null, revision: { increment: 1 } },
       });
       return { saved: true };
-    });
+    }).catch(error => this.transactionError(error));
   }
 
   async delete(id: string, revision: number) {
@@ -231,7 +272,7 @@ export class MediaService implements OnModuleInit {
       const result = await db.mediaAsset.deleteMany({ where: { id, revision, status: 'DRAFT', reports: { none: {} } } });
       if (!result.count) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
       return [asset.storageKey, ...asset.children.map(child => child.storageKey)];
-    });
+    }).catch(error => this.transactionError(error));
     try { await Promise.all(removed.map(key => unlink(this.path(key)))); }
     catch (error) {
       this.logger.error(`Bild ${id} ist aus der Datenbank entfernt, die Datei konnte nicht geloescht werden.`, error);

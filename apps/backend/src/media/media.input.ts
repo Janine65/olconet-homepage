@@ -12,17 +12,25 @@ export function mediaCategory(value: unknown): 'DRAWING' | 'SAMMY' | 'TRAVEL' {
   return value === 'TRAVEL' ? value : galleryCategory(value);
 }
 
-export function photoGroupInput(body: unknown) {
-  const input = record(body, ['ids']);
-  if (!Array.isArray(input['ids']) || input['ids'].length < 2 || input['ids'].length > 100) {
-    throw new BadRequestException('Eine Fotogruppe muss 2 bis 100 Bilder enthalten.');
+function photoIds(value: unknown, minimum: number) {
+  if (!Array.isArray(value) || value.length < minimum || value.length > 100) {
+    throw new BadRequestException(`Bitte ${minimum} bis 100 Bild-IDs angeben.`);
   }
-  const ids = input['ids'].map((id: unknown) => {
+  const ids = value.map((id: unknown) => {
     if (typeof id !== 'string') throw new BadRequestException('Ungueltige Bild-ID.');
     return reportId(id).toLowerCase();
   });
   if (new Set(ids).size !== ids.length) throw new BadRequestException('Jedes Bild darf nur einmal zur Gruppe gehoeren.');
   return ids;
+}
+
+export function photoGroupInput(body: unknown) {
+  return photoIds(record(body, ['ids'])['ids'], 2);
+}
+
+export function appendGroupInput(body: unknown) {
+  const input = record(body, ['ids', 'revision']);
+  return { ids: photoIds(input['ids'], 1), revision: reportVersion(input['revision']) };
 }
 
 export function mediaInput(body: unknown, updating = false) {

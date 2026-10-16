@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import sharp from 'sharp';
 import { normalizeImage, MAX_UPLOAD_BYTES } from '../src/media/image';
-import { mediaInput, galleryCategory, photoGroupInput } from '../src/media/media.input';
+import { appendGroupInput, mediaInput, galleryCategory, photoGroupInput } from '../src/media/media.input';
 
 test('Fotogruppen verlangen 2 bis 100 eindeutige Bild-IDs und keine fremden Felder', () => {
   const ids = Array.from({ length: 101 }, (_, i) => `11111111-1111-4111-8111-${String(i).padStart(12, '0')}`);
@@ -26,6 +26,17 @@ test('Bilddaten verlangen Kategorie, Titel, Alternativtext und begrenzte Sortier
   assert.throws(() => mediaInput(input, true));
   assert.equal(mediaInput({ ...input, revision: 2 }, true).revision, 2);
   assert.throws(() => galleryCategory(['SAMMY']));
+});
+
+test('Nachtraegliche Gruppenfotos verlangen mindestens eine eindeutige Bild-ID und eine aktuelle Revision', () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  assert.deepEqual(appendGroupInput({ ids: [id], revision: 0 }), { ids: [id], revision: 0 });
+  for (const body of [
+    { ids: [], revision: 0 }, { ids: [id] }, { ids: [id], revision: -1 }, { ids: [id], revision: '0' },
+    { ids: [id, id], revision: 0 }, { ids: ['invalid'], revision: 0 }, { ids: [1], revision: 0 },
+    { ids: [id], revision: 0, status: 'PUBLISHED' },
+    { ids: Array.from({ length: 101 }, () => id), revision: 0 },
+  ]) assert.throws(() => appendGroupInput(body));
 });
 
 test('Bilder werden orientiert, begrenzt und ohne EXIF neu kodiert', async () => {

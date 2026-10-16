@@ -13,8 +13,14 @@
     "test": "node --test infrastructure/static-server.test.mjs && pnpm --filter @olconet/backend test",
     "test:docker": "node --test infrastructure/compose.test.mjs",
     "test:integration": "node infrastructure/run-auth-integration.mjs",
+    "docker:build:mac": "pnpm build && docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml build homepage admin backend",
+    "docker:run:mac": "docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml run --rm --no-deps migrate && docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml up -d --wait --no-build homepage admin backend",
+    "docker:build:synology": "docker compose --env-file .env.docker.synology -f compose.yaml build homepage admin backend",
+    "docker:push:synology": "docker compose --env-file .env.docker.synology -f compose.yaml push homepage admin backend",
+    "docker:build-push:synology": "pnpm run docker:build:synology && pnpm run docker:push:synology",
     "db:generate": "pnpm --filter @olconet/backend db:generate",
     "db:migrate": "pnpm --filter @olconet/backend db:migrate",
-    "db:deploy": "pnpm --filter @olconet/backend db:deploy"
+    "db:deploy": "pnpm --filter @olconet/backend db:deploy",
+    "postversion": "git push && git push --tag"
   }
 }
