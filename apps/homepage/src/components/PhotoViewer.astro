@@ -1,0 +1,54 @@
+---
+import { translations, type Language } from '../i18n';
+interface Props { lang?: Language; }
+const { lang = 'de' } = Astro.props;
+const t = translations(lang);
+---
+<dialog class="photo-viewer" aria-label={t('Foto in Grossansicht', 'Full-screen photo')} data-photo-viewer>
+  <img data-photo-viewer-image alt="" hidden />
+  <p class="photo-viewer-status" data-photo-viewer-status role="status" hidden></p>
+  <div class="photo-viewer-navigation" data-photo-viewer-navigation role="group" aria-label={t('Fotos der Gruppe', 'Photos in this group')} hidden>
+    <button type="button" data-photo-viewer-previous aria-label={t('Vorheriges Foto', 'Previous photo')} title={t('Vorheriges Foto (Pfeil links)', 'Previous photo (left arrow)')}>&larr;</button>
+    <span data-photo-viewer-position role="status" aria-live="polite" aria-atomic="true"></span>
+    <button type="button" data-photo-viewer-next aria-label={t('Naechstes Foto', 'Next photo')} title={t('Naechstes Foto (Pfeil rechts)', 'Next photo (right arrow)')}>&rarr;</button>
+  </div>
+  <form method="dialog" class="photo-viewer-close">
+    <button type="submit" autofocus aria-label={t('Grossansicht schliessen', 'Close full-screen photo')}>{t('Schliessen', 'Close')} &times;</button>
+  </form>
+</dialog>
+<script>
+  import { initializePhotoViewer } from '../scripts/photo-viewer';
+  initializePhotoViewer();
+</script>
+<style is:global>
+  .photo-zoom {
+    display: block; width: 100%; padding: 0; border: 0; border-radius: 0;
+    background: transparent; cursor: zoom-in; line-height: 0;
+  }
+  .photo-zoom img { display: block; margin: auto; }
+  .photo-zoom:focus-visible { outline: 3px solid #245e50; outline-offset: 4px; }
+  html.photo-viewer-open { overflow: hidden; }
+  .photo-viewer {
+    position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+    max-width: none; max-height: none; margin: 0; padding: .5rem;
+    border: 0; background: #101714; color: white; overflow: hidden;
+  }
+  .photo-viewer::backdrop { background: #101714; }
+  .photo-viewer > img { width: 100%; height: 100%; object-fit: contain; }
+  .photo-viewer-close {
+    position: absolute; top: max(.75rem, env(safe-area-inset-top));
+    right: max(.75rem, env(safe-area-inset-right)); margin: 0;
+  }
+  .photo-viewer-close button { min-height: 44px; background: #fff; color: #243b36; }
+  .photo-viewer-navigation {
+    position: absolute; inset: auto max(.75rem, env(safe-area-inset-right)) max(.75rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-left));
+    justify-content: center; align-items: center; gap: .75rem;
+  }
+  .photo-viewer-navigation:not([hidden]) { display: flex; }
+  .photo-viewer-navigation button { min-width: 44px; min-height: 44px; }
+  .photo-viewer-navigation span { padding: .5rem; border-radius: .4rem; background: #101714; white-space: nowrap; }
+  .photo-viewer-status {
+    position: absolute; inset: auto 1rem max(5rem, env(safe-area-inset-bottom));
+    max-width: none; margin: 0; padding: .75rem; background: #101714; text-align: center;
+  }
+</style>

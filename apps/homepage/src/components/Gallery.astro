@@ -1,17 +1,20 @@
 ---
-const { category } = Astro.props;
+import { translations, type Language } from '../i18n';
+interface Props { category: 'DRAWING' | 'SAMMY'; lang?: Language; }
+const { category, lang = 'de' } = Astro.props;
+const t = translations(lang);
 ---
 <div data-gallery={category}>
-  <p data-gallery-status role="status">Bilder werden geladen ...</p>
+  <p data-gallery-status role="status">{t('Bilder werden geladen ...', 'Loading photos ...')}</p>
   <div data-gallery-items class="gallery-grid"></div>
   <div class="pagination">
-    <button data-gallery-previous type="button" disabled>Vorherige Seite</button>
-    <span data-gallery-page>Seite 1</span>
-    <button data-gallery-next type="button" disabled>Naechste Seite</button>
-    <button data-gallery-retry type="button" hidden>Erneut versuchen</button>
+    <button data-gallery-previous type="button" disabled>{t('Vorherige Seite', 'Previous page')}</button>
+    <span data-gallery-page>{t('Seite 1', 'Page 1')}</span>
+    <button data-gallery-next type="button" disabled>{t('Naechste Seite', 'Next page')}</button>
+    <button data-gallery-retry type="button" hidden>{t('Erneut versuchen', 'Try again')}</button>
   </div>
 </div>
-<noscript>Bitte JavaScript aktivieren, um die aktuelle Galerie zu sehen.</noscript>
+<noscript>{t('Bitte JavaScript aktivieren, um die aktuelle Galerie zu sehen.', 'Please enable JavaScript to view the current gallery.')}</noscript>
 <script>
   import '../scripts/gallery';
 </script>
@@ -20,4 +23,6 @@ const { category } = Astro.props;
   .gallery-grid figure { margin: 0; padding: 1rem; background: white; border: 1px solid #d4ddd4; border-radius: .75rem; }
   .gallery-grid img { width: 100%; height: 300px; object-fit: contain; }
   .gallery-grid figcaption { overflow-wrap: anywhere; }
+  .gallery-grid .gallery-group { grid-column: 1 / -1; }
+  .gallery-photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
 </style>

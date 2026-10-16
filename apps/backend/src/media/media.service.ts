@@ -4,11 +4,19 @@ import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { PrismaService } from '../prisma.service';
-import { galleryCategory, mediaCategory, mediaInput } from './media.input';
+import { galleryCategory, mediaCategory, mediaInput, photoGroupInput } from './media.input';
 import { Prisma } from '../generated/prisma/client';
 import { lockMedia } from './media.lock';
 import { normalizeImage } from './image';
 import { mediaOrderBy, moveInput, orderToken } from './media.order';
+import { Language, translatedMedia } from '../language';
+
+const gallerySelect = {
+  id: true, title: true, altText: true, description: true, category: true, sortOrder: true,
+  status: true, revision: true, publishedAt: true,
+  titleEn: true, altTextEn: true, descriptionEn: true,
+  children: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], select: { id: true } },
+} satisfies Prisma.MediaAssetSelect;
 
 @Injectable()
 export class MediaService implements OnModuleInit {
@@ -25,8 +33,9 @@ export class MediaService implements OnModuleInit {
     return resolve(this.directory, key);
   }
 
-  async list(page: number, category?: unknown, publicOnly = false) {
+  async list(page: number, category?: unknown, publicOnly = false, lang: Language = 'de') {
     const where = {
+      parentId: null,
       ...(category === undefined ? (publicOnly ? { category: { in: ['DRAWING', 'SAMMY'] as ('DRAWING' | 'SAMMY')[] } } : {}) :
         { category: publicOnly ? galleryCategory(category) : mediaCategory(category) }),
       ...(publicOnly ? { status: 'PUBLISHED' as const } : {}),
@@ -34,23 +43,22 @@ export class MediaService implements OnModuleInit {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.mediaAsset.findMany({
         where, orderBy: [...mediaOrderBy], skip: (page - 1) * 20, take: 20,
-        select: { id: true, title: true, altText: true, description: true, category: true, sortOrder: true,
-          status: true, revision: true, publishedAt: true },
+        select: gallerySelect,
       }),
       this.prisma.mediaAsset.count({ where }),
     ]);
-    return { items, total, page, pageSize: 20 };
+    return { items: publicOnly ? items.map(asset => translatedMedia(asset, lang)) : items, total, page, pageSize: 20 };
   }
 
   async order(categoryInput: unknown, page: number) {
     const category = galleryCategory(categoryInput);
     return this.prisma.$transaction(async db => {
       const ordered = await db.mediaAsset.findMany({
-        where: { category }, orderBy: [...mediaOrderBy], select: { id: true, revision: true },
+        where: { category, parentId: null }, orderBy: [...mediaOrderBy], select: { id: true, revision: true },
       });
       const ids = ordered.slice((page - 1) * 20, page * 20).map(item => item.id);
       const assets = await db.mediaAsset.findMany({
-        where: { id: { in: ids } }, select: { id: true, title: true, altText: true, status: true },
+        where: { id: { in: ids } }, select: { id: true, title: true, altText: true, status: true, _count: { select: { children: true } } },
       });
       const byId = new Map(assets.map(asset => [asset.id, asset]));
       return { items: ids.map((id, index) => ({ ...byId.get(id)!, position: (page - 1) * 20 + index + 1 })),
@@ -59,10 +67,9 @@ export class MediaService implements OnModuleInit {
   }
 
   async get(id: string) {
-    const asset = await this.prisma.mediaAsset.findUnique({
-      where: { id },
-      select: { id: true, title: true, altText: true, description: true, category: true, sortOrder: true,
-        status: true, revision: true, publishedAt: true },
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, parentId: null },
+      select: gallerySelect,
     });
     if (!asset) throw new NotFoundException('Das Bild wurde nicht gefunden.');
     return asset;
@@ -73,7 +80,7 @@ export class MediaService implements OnModuleInit {
     try {
       return await this.prisma.$transaction(async db => {
         const ordered = await db.mediaAsset.findMany({
-          where: { category: input.category }, orderBy: [...mediaOrderBy],
+          where: { category: input.category, parentId: null }, orderBy: [...mediaOrderBy],
           select: { id: true, revision: true, sortOrder: true },
         });
         if (orderToken(ordered) !== input.token) {
@@ -100,13 +107,44 @@ export class MediaService implements OnModuleInit {
         }
         return { saved: true, position: input.position };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error.code === 'P2034' || (error.code === 'P2010' && ['40001', '40P01'].includes(String(error.meta?.['code']))))) {
-        throw new ConflictException('Die Kategorie wurde gleichzeitig geaendert. Bitte die Reihenfolge neu laden.');
-      }
-      throw error;
+    } catch (error) { this.transactionError(error); }
+  }
+
+  private transactionError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === 'P2034' || (error.code === 'P2010' && ['40001', '40P01'].includes(String(error.meta?.['code']))))) {
+      throw new ConflictException('Die Galerie wurde gleichzeitig geaendert. Bitte neu laden und erneut versuchen.');
     }
+    throw error;
+  }
+
+  async group(body: unknown) {
+    const ids = photoGroupInput(body);
+    const id = ids[0]!;
+    try {
+      return await this.prisma.$transaction(async db => {
+        await lockMedia(db, this.prisma.databaseSchema, ids);
+        const assets = await db.mediaAsset.findMany({
+          where: { id: { in: ids } }, include: { children: { select: { id: true } }, _count: { select: { reports: true } } },
+        });
+        const first = assets.find(asset => asset.id === id);
+        if (!first || assets.length !== ids.length) throw new NotFoundException('Ein Bild der Fotogruppe wurde nicht gefunden.');
+        // A lost response can safely be retried without creating another group.
+        if (first.parentId === null && first.children.length === ids.length - 1 &&
+          ids.slice(1).every(childId => first.children.some(child => child.id === childId))) return { id };
+        if (assets.some(asset => asset.parentId !== null || asset.children.length || asset.status !== 'DRAFT' ||
+          asset.revision !== 0 || asset._count.reports || asset.category === 'TRAVEL' ||
+          asset.category !== first.category || asset.title !== first.title || asset.altText !== first.altText ||
+          asset.titleEn !== first.titleEn || asset.altTextEn !== first.altTextEn || asset.descriptionEn !== first.descriptionEn)) {
+          throw new ConflictException('Nur unveraenderte Entwuerfe derselben Galerie mit gemeinsamem Titel und Alternativtext koennen gruppiert werden.');
+        }
+        for (const [position, childId] of ids.slice(1).entries()) {
+          await db.mediaAsset.update({ where: { id: childId }, data: { parentId: id, sortOrder: position, revision: { increment: 1 } } });
+        }
+        await db.mediaAsset.update({ where: { id }, data: { revision: { increment: 1 } } });
+        return { id };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) { this.transactionError(error); }
   }
 
   async upload(file: Express.Multer.File | undefined, body: unknown) {
@@ -149,49 +187,52 @@ export class MediaService implements OnModuleInit {
     const { data, revision } = mediaInput(body, true);
     return this.prisma.$transaction(async db => {
       await lockMedia(db, this.prisma.databaseSchema, [id]);
-      const current = await db.mediaAsset.findUnique({ where: { id }, include: { _count: { select: { reports: true } } } });
+      const current = await db.mediaAsset.findUnique({ where: { id }, include: { _count: { select: { reports: true, children: true } } } });
       if (!current) throw new NotFoundException('Das Bild wurde nicht gefunden.');
+      if (current.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe bearbeiten.');
       if (current.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (current._count.children && data.category === 'TRAVEL') throw new BadRequestException('Fotogruppen sind nur bei Sammy und Meine Kreationen erlaubt.');
       if (current.category !== data.category && (current._count.reports || (current.status === 'PUBLISHED' && data.category === 'TRAVEL'))) {
         throw new ConflictException('Vor dem Kategorie-Wechsel Berichtszuordnungen entfernen und Veroeffentlichung zuruecknehmen.');
       }
       await db.mediaAsset.update({ where: { id }, data: { ...data, revision: { increment: 1 } } });
+      const { sortOrder: _sortOrder, ...shared } = data;
+      await db.mediaAsset.updateMany({ where: { parentId: id }, data: { ...shared, revision: { increment: 1 } } });
       return { saved: true };
     });
   }
 
-  private async conflict(id: string): Promise<never> {
-    if (!await this.prisma.mediaAsset.findUnique({ where: { id }, select: { id: true } })) {
-      throw new NotFoundException('Das Bild wurde nicht gefunden.');
-    }
-    throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte die Liste neu laden.');
-  }
-
   async status(id: string, revision: number, published: boolean) {
-    const asset = await this.prisma.mediaAsset.findUnique({ where: { id }, select: { category: true } });
-    if (asset?.category === 'TRAVEL') throw new BadRequestException('Reisebilder werden ausschliesslich mit ihrem Reisebericht veroeffentlicht.');
-    const result = await this.prisma.mediaAsset.updateMany({
-      where: { id, revision, category: { in: ['DRAWING', 'SAMMY'] } },
-      data: { status: published ? 'PUBLISHED' : 'DRAFT', publishedAt: published ? new Date() : null, revision: { increment: 1 } },
+    return this.prisma.$transaction(async db => {
+      await lockMedia(db, this.prisma.databaseSchema, [id]);
+      const asset = await db.mediaAsset.findUnique({ where: { id } });
+      if (!asset) throw new NotFoundException('Das Bild wurde nicht gefunden.');
+      if (asset.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe veroeffentlichen oder zuruecknehmen.');
+      if (asset.category === 'TRAVEL') throw new BadRequestException('Reisebilder werden ausschliesslich mit ihrem Reisebericht veroeffentlicht.');
+      if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      await db.mediaAsset.updateMany({
+        where: { OR: [{ id }, { parentId: id }] },
+        data: { status: published ? 'PUBLISHED' : 'DRAFT', publishedAt: published ? new Date() : null, revision: { increment: 1 } },
+      });
+      return { saved: true };
     });
-    if (!result.count) await this.conflict(id);
-    return { saved: true };
   }
 
   async delete(id: string, revision: number) {
     const removed = await this.prisma.$transaction(async (db) => {
       await lockMedia(db, this.prisma.databaseSchema, [id]);
-      const asset = await db.mediaAsset.findUnique({ where: { id }, include: { _count: { select: { reports: true } } } });
+      const asset = await db.mediaAsset.findUnique({ where: { id }, include: { children: { select: { storageKey: true } }, _count: { select: { reports: true } } } });
       if (!asset) throw new NotFoundException('Das Bild wurde nicht gefunden.');
+      if (asset.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe loeschen.');
       if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
       if (asset.status !== 'DRAFT' || asset._count.reports) {
         throw new ConflictException('Vor dem Loeschen Veroeffentlichung zuruecknehmen und Berichtszuordnungen entfernen.');
       }
       const result = await db.mediaAsset.deleteMany({ where: { id, revision, status: 'DRAFT', reports: { none: {} } } });
       if (!result.count) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
-      return asset;
+      return [asset.storageKey, ...asset.children.map(child => child.storageKey)];
     });
-    try { await unlink(this.path(removed.storageKey)); }
+    try { await Promise.all(removed.map(key => unlink(this.path(key)))); }
     catch (error) {
       this.logger.error(`Bild ${id} ist aus der Datenbank entfernt, die Datei konnte nicht geloescht werden.`, error);
       throw error;
@@ -209,7 +250,7 @@ export class MediaService implements OnModuleInit {
 
   async reportImage(slug: string, id: string) {
     const asset = await this.prisma.mediaAsset.findFirst({
-      where: { id, category: 'TRAVEL', reports: { some: { report: { slug, status: 'PUBLISHED' } } } },
+      where: { id, category: 'TRAVEL', reports: { some: { report: { slug, status: 'PUBLISHED' }, page: { status: 'PUBLISHED' } } } },
       select: { storageKey: true },
     });
     if (!asset) throw new NotFoundException('Das Bild ist in diesem Bericht nicht verfuegbar.');

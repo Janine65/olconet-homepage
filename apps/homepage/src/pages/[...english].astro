@@ -1,0 +1,23 @@
+---
+import Home from './index.astro';
+import Reisen from './reisen.astro';
+import Bericht from './reisen/bericht.astro';
+import Kreationen from './kreationen.astro';
+import Sammy from './sammy.astro';
+import Kontakt from './kontakt.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { english: 'en' }, props: { page: 'home' } },
+    { params: { english: 'en/reisen' }, props: { page: 'reisen' } },
+    { params: { english: 'en/reisen/bericht' }, props: { page: 'bericht' } },
+    { params: { english: 'en/kreationen' }, props: { page: 'kreationen' } },
+    { params: { english: 'en/sammy' }, props: { page: 'sammy' } },
+    { params: { english: 'en/kontakt' }, props: { page: 'kontakt' } },
+  ];
+}
+const pages = { home: Home, reisen: Reisen, bericht: Bericht, kreationen: Kreationen, sammy: Sammy, kontakt: Kontakt };
+interface Props { page: keyof typeof pages; }
+const Page = pages[Astro.props.page];
+---
+<Page lang="en" />

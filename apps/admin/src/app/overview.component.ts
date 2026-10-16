@@ -14,9 +14,9 @@ import { AuthService, Overview } from './auth.service';
         <section><h2>Reiseberichte</h2><p class="count">{{ counts.reports }}</p>
           <p>Berichte einschliesslich Entwuerfen.</p><a routerLink="/reiseberichte">Berichte verwalten</a></section>
         <section><h2>Meine Kreationen</h2><p class="count">{{ counts.drawings }}</p>
-          <p>Zeichnungen, Toepferarbeiten und Naehprojekte, einschliesslich Entwuerfen.</p><a routerLink="/kreationen">Kreationen verwalten</a></section>
+          <p>Einzelbilder und Fotogruppen kreativer Arbeiten, einschliesslich Entwuerfen.</p><a routerLink="/kreationen">Kreationen verwalten</a></section>
         <section><h2>Sammy</h2><p class="count">{{ counts.sammyPhotos }}</p>
-          <p>Fotos einschliesslich Entwuerfen.</p><a routerLink="/sammy">Sammy-Fotos verwalten</a></section>
+          <p>Einzelfotos und Fotogruppen einschliesslich Entwuerfen.</p><a routerLink="/sammy">Sammy-Fotos verwalten</a></section>
       </div>
     }
     <section class="reports"><h2>Schnellzugriffe</h2><div class="actions">

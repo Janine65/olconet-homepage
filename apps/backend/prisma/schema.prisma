@@ -53,12 +53,15 @@ model TravelReport {
   id              String            @id @default(uuid()) @db.Uuid
   slug            String            @unique
   title           String
+  titleEn         String            @default("")
   excerpt         String
+  excerptEn       String            @default("")
   contentMarkdown String            @default("")
   contentHtml     String            @default("")
   version         Int               @default(0)
   status          PublicationStatus @default(DRAFT)
   destination     String?
+  destinationEn   String            @default("")
   travelStart     DateTime?         @db.Date
   travelEnd       DateTime?         @db.Date
   publishedAt     DateTime?         @db.Timestamptz(3)
@@ -67,6 +70,7 @@ model TravelReport {
   authorId        String            @db.Uuid
   author          AdminUser         @relation(fields: [authorId], references: [id], onDelete: Restrict)
   images          ReportImage[]
+  pages           ReportPage[]
 
   @@index([status, publishedAt])
 }
@@ -81,8 +85,11 @@ model MediaAsset {
   mimeType     String
   byteSize     Int
   altText      String
+  altTextEn    String            @default("")
   title        String
+  titleEn      String            @default("")
   description  String?
+  descriptionEn String           @default("")
   category     MediaCategory
   status       PublicationStatus @default(DRAFT)
   sortOrder    Int               @default(0)
@@ -91,19 +98,44 @@ model MediaAsset {
   createdAt    DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
   reports      ReportImage[]
+  parentId     String?           @db.Uuid
+  parent       MediaAsset?       @relation("PhotoGroup", fields: [parentId], references: [id], onDelete: Cascade)
+  children     MediaAsset[]      @relation("PhotoGroup")
 
   @@index([category, status, sortOrder])
+  @@index([parentId])
+}
+
+model ReportPage {
+  id          String            @id @default(uuid()) @db.Uuid
+  reportId    String            @db.Uuid
+  title       String            @default("")
+  titleEn     String            @default("")
+  contentHtml String            @default("")
+  contentHtmlEn String          @default("")
+  sortOrder   Int
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?         @db.Timestamptz(3)
+  report      TravelReport      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  images      ReportImage[]
+
+  @@unique([id, reportId])
+  @@index([reportId, sortOrder])
 }
 
 model ReportImage {
   reportId  String       @db.Uuid
+  pageId    String       @db.Uuid
   assetId   String       @db.Uuid
   sortOrder Int          @default(0)
   inGallery Boolean      @default(true)
   caption   String?
+  captionEn String       @default("")
   report    TravelReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   asset     MediaAsset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  page      ReportPage   @relation(fields: [pageId, reportId], references: [id, reportId], onDelete: Cascade)
 
-  @@id([reportId, assetId])
+  @@id([pageId, assetId])
+  @@index([reportId])
   @@index([assetId])
 }

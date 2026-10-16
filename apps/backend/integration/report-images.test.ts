@@ -90,6 +90,28 @@ test('Reisebilder im Text, Galerie und sichere Upload-Wiederholung', async t => 
     assert.equal((await get(`/api/public/media/${first}/image`)).status, 404);
     assert.equal((await get(`/api/public/reports/not-this-report/images/${first}`)).status, 404);
   });
+  await t.test('Alle drei Textbildgroessen bleiben nach Speichern erhalten, Bilddatei und Galerie bleiben unveraendert', async () => {
+    const original = await (await get(`/api/public/reports/reisebilder/images/${first}`)).arrayBuffer();
+    for (const size of [100, 250, 500]) {
+      const response = await post(`/api/admin/reports/${report.id}/save`, {
+        ...input, version: report.version,
+        contentHtml: `<p>Am See</p><figure><img data-asset-id="${first}" data-image-size="${size}" width="9999" height="1"></figure>`,
+        galleryImages: [{ assetId: second, caption: 'Galerie bleibt gleich' }],
+      });
+      assert.equal(response.status, 201); report = await response.json();
+      assert.match(report.contentHtml, new RegExp(`data-image-size="${size}"`));
+      assert.doesNotMatch(report.contentHtml, /width=|height=/);
+      const published = await (await get('/api/public/reports/reisebilder')).json();
+      assert.match(published.pages[0].contentHtml, new RegExp(`width="${size}" height="${size}"`));
+      assert.equal(published.pages[0].images.find((image: { assetId: string }) => image.assetId === second).caption, 'Galerie bleibt gleich');
+      assert.deepEqual(await (await get(`/api/public/reports/reisebilder/images/${first}`)).arrayBuffer(), original);
+    }
+    assert.equal((await post(`/api/admin/reports/${report.id}/save`, {
+      ...input, version: report.version,
+      contentHtml: `<figure><img data-asset-id="${first}" data-image-size="1000"></figure>`,
+    })).status, 400);
+    assert.equal((await (await get(`/api/admin/reports/${report.id}`, true)).json()).version, report.version);
+  });
   await t.test('Galerie-Reihenfolge und Inline-only werden gespeichert, entfernte Bilder sofort gesperrt', async () => {
     const response = await post(`/api/admin/reports/${report.id}/save`, { ...input, contentHtml: text(first), version: report.version,
       galleryImages: [{ assetId: second, caption: 'Nur Berge in Galerie' }] });

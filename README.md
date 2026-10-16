@@ -187,58 +187,93 @@ Nach dem Login unter **Reiseberichte verwalten** einen neuen Bericht anlegen:
    dem Titel vorgeschlagen und kann angepasst werden; es muss eindeutig sein
    und darf nur Kleinbuchstaben, Zahlen und einzelne Bindestriche enthalten.
 2. Kurzbeschreibung, optional Reiseziel und Reisedaten ergaenzen.
-3. Im visuellen Editor den Bericht schreiben. Absatz, Ueberschriften,
+3. Die erste Seite im visuellen Editor schreiben; mit **Seite hinzufuegen**
+   weitere Seiten anlegen. Ein Seitentitel ist optional. Absatz, Ueberschriften,
    Fett/Kursiv, Listen, Zitate und Rueckgaengig/Wiederholen sind verfuegbar.
    Der Editor wird erst beim Bearbeiten nachgeladen.
 4. **Speichern** legt zunaechst einen privaten Entwurf an. Leerer Berichtstext
    und leere Kurzbeschreibung sind im Entwurf erlaubt, der Titel nicht.
-5. **Veroeffentlichen** gibt die zuletzt gespeicherte Version fuer Homepage
-   und RSS frei. Kurzbeschreibung und nichtleerer Berichtstext sind erforderlich.
+5. **Seite veroeffentlichen** gibt nur die ausgewaehlte, gespeicherte Seite frei.
+   Die erste veroeffentlichte Seite macht den Bericht auf der Homepage und
+   im RSS-Feed sichtbar. Kurzbeschreibung sowie Text oder Fotos auf dieser
+   Seite sind erforderlich; weitere Seiten bleiben private Entwuerfe.
+
+Unter **Berichtsseiten** zwischen den Seiten wechseln und mit **Vor / Zurueck**
+die Reihenfolge aendern. Seitenwechsel behalten ungespeicherte Inhalte.
+Jede Seite hat ihren eigenen Text und ihre eigene Fotogalerie. Rueckgaengig
+im Editor bleibt auf die jeweilige Seite beschraenkt. Neue Seiten sind immer
+Entwuerfe, auch bei bereits sichtbaren Berichten. **Speichern** speichert
+den gesamten Bericht mit allen Seiten atomar, nicht nur die ausgewaehlte Seite.
+**Ausgewaehlte Seite entfernen** entfernt sie beim naechsten Speichern samt
+Bildzuordnungen, aber nicht die Bilddateien. Mindestens eine Seite bleibt.
+Laufende Uploads sperren den Seitenwechsel; bei einer pausierten, offenen
+Warteschlange vor dem Wechsel deren Verwerfen bestaetigen oder zuerst fortsetzen.
 
 Es gibt kein Autosave. Vor Veroeffentlichung, Ruecknahme oder Loeschen erst
 speichern. Beim Verlassen eines bearbeiteten Berichts warnt die Verwaltung
 vor ungespeicherten Aenderungen. Alle Verwaltungskonten koennen alle Berichte
 bearbeiten; das urspruengliche Autorenkonto bleibt erhalten.
 
-**Wichtig:** Speichern eines bereits veroeffentlichten Berichts aendert sofort
-die oeffentliche Version. Fuer private Ueberarbeitung zuerst die
-Veroeffentlichung zuruecknehmen. Das URL-Kuerzel nach der Veroeffentlichung
+**Wichtig:** Speichern aendert veroeffentlichte Seiten und gemeinsame
+Berichtsangaben sofort oeffentlich. Entwurfsseiten bleiben privat. Fuer die
+private Ueberarbeitung einer sichtbaren Seite zuerst **Seite zuruecknehmen**
+verwenden. Das URL-Kuerzel nach der Veroeffentlichung
 moeglichst nicht mehr aendern, da alte Links sonst nicht mehr funktionieren.
 Ein Versionszaehler verhindert, dass parallele Bearbeitung fremde Aenderungen
 ueberschreibt. Bei HTTP 409 die eigenen Eingaben sichern und **Gespeicherte
 Version neu laden** verwenden; der Konflikt wird nicht automatisch aufgeloest.
 
-**Veroeffentlichung zuruecknehmen** setzt den Bericht wieder auf Entwurf:
-Er verschwindet unmittelbar aus der Public-API und dem Feed. Bereits von
+**Seite zuruecknehmen** sperrt nur diese Seite und ihre nicht anderweitig
+veroeffentlichten Fotos. Nach Ruecknahme oder Entfernen der letzten sichtbaren
+Seite verschwindet der Bericht auch aus Public-API und RSS.
+**Alle Seiten zuruecknehmen** setzt alle Seiten wieder auf Entwurf.
+Bereits von
 RSS-Programmen heruntergeladene Eintraege koennen dort weiterhin existieren.
 Nur Entwuerfe lassen sich nach Rueckfrage endgueltig loeschen.
 
 Titel: maximal 200 Zeichen, URL-Kuerzel: 120, Kurzbeschreibung: 1000,
-Reiseziel: 200, Berichtstext: 100000 UTF-8-Bytes. Reisedaten sind optional;
+Reiseziel: 200, Seitentitel: 200, maximal 100 Seiten.
+Alle Seitentexte zusammen: maximal 100000 UTF-8-Bytes je Sprache und Bericht.
+Die JSON-Anfrage ist fuer zweisprachige Berichte auf 256 KiB begrenzt. Reisedaten sind optional;
 Reiseende darf nicht vor Reisebeginn liegen. HTML wird serverseitig auf eine
 enge Liste von Textformatierungen und Bildreferenzen begrenzt. Skripte,
 Links, externe Bild-URLs, Styles und eingebettete Inhalte werden entfernt.
 Das bisherige Feld `contentMarkdown` bleibt fuer bestehende
-Daten erhalten; der neue Editor verwendet `contentHtml`.
+Daten erhalten; der Editor verwendet `contentHtml` pro Seite.
+Die Migration uebernimmt bestehende Texte, Fotos und Veroeffentlichungszustaende
+verlustfrei als erste Seite.
 
-### Bilder im Berichtstext und Berichtsgalerie
+### Bilder im Seitentext und in der Seitengalerie
 
 Reisebilder haben die Kategorie **Reiseberichte** (`TRAVEL`). Im Bericht unter
-**Bilder im Text und Berichtsgalerie** vorhandene Reisebilder auswaehlen,
+**Bilder im Text und Galerie dieser Seite** vorhandene Reisebilder auswaehlen,
 oder dort mehrere Dateien mit der Warteschlange hochladen. Erfolgreiche
-Uploads werden zur **noch ungespeicherten** Berichtsgalerie hinzugefuegt.
+Uploads werden zur **noch ungespeicherten** Galerie der ausgewaehlten Seite hinzugefuegt.
 Zum Anlegen einer Bildzuordnung den Bericht danach speichern.
+Beim Mehrfachupload direkt im Reisebericht zeigt jeder Eintrag eine kleine
+Fotovorschau. Der Titel ist anfangs leer statt mit dem Dateinamen vorbelegt;
+Titel und Alternativtext vor dem Start je Foto ausfuellen. Die Vorschau bleibt
+auch nach erfolgreichem Upload sichtbar.
 
 - **Im Text:** Im Editor die gewuenschte Einfuegeposition anklicken, ein
   Reisebild auswaehlen, optional eine Bildunterschrift angeben und **Im Text
   einfuegen** verwenden. Die Bildunterschrift ist unter dem Bild direkt
   im Editor bearbeitbar. Zum Entfernen das Bild markieren und loeschen.
-- **Galerie:** **Zur Berichtsgalerie hinzufuegen** verwenden. Die Liste
+  Vor dem Einfuegen unter **Bildgroesse im Text** zwischen **Klein (100 x 100)**,
+  **Mittel (250 x 250)** und **Gross (500 x 500 Pixel)** waehlen. Standard ist
+  Mittel, auch fuer bestehende Textbilder ohne gespeicherte Groesse.
+  Das vollstaendige Foto wird ohne Beschnitt oder Verzerrung im gewaehlten
+  quadratischen Rahmen dargestellt; auf schmalen Bildschirmen verkleinert
+  sich der Rahmen proportional. Zum Aendern eines eingefuegten Fotos das
+  Bild markieren oder in seine Bildunterschrift klicken und einen der drei
+  Groessen-Buttons in der Editor-Werkzeugleiste verwenden. Erst Speichern
+  uebernimmt die Groesse. Galerie-Fotos und die Grossansicht bleiben unveraendert.
+- **Galerie:** **Zur Seitengalerie hinzufuegen** verwenden. Die Liste
   laesst sich mit **Bild nach vorne/hinten** sortieren. Bildunterschriften
   sind optional (maximal 500 Zeichen pro Galerieeintrag). Die Galerie steht
-  unter dem Berichtstext. Entfernen aus der Galerie entfernt nicht das
+  unter dem Seitentext. Entfernen aus der Galerie entfernt nicht das
   gleiche Bild im Text.
-- Dasselbe Bild kann in beiden Varianten und in mehreren Berichten
+- Dasselbe Bild kann in beiden Varianten, auf mehreren Seiten und in mehreren Berichten
   verwendet werden. Maximal 100 verschiedene Bilder pro Bericht.
 - Titel und Alternativtext des Bildes werden in der Bildverwaltung gepflegt.
   Zugeordnete Bilder koennen nicht geloescht oder einer anderen Kategorie
@@ -246,7 +281,7 @@ Zum Anlegen einer Bildzuordnung den Bericht danach speichern.
   Eine Bildzuordnung verschwindet beim Loeschen eines Berichts; die Datei bleibt.
 
 Reisebilder werden **nicht einzeln veroeffentlicht**. Nur die gespeicherten
-Bildzuordnungen eines veroeffentlichten Berichts geben dessen
+Bildzuordnungen einer veroeffentlichten Seite eines sichtbaren Berichts geben dessen
 berichtsspezifische URLs frei:
 `/api/public/reports/:slug/images/:id`. Entwurfsbilder bleiben privat,
 auch wenn ihre ID bekannt ist. Ruecknahme oder Entfernen eines Bildes
@@ -255,23 +290,44 @@ einem anderen veroeffentlichten Bericht verwendet, bleibt es dort erreichbar.
 Bereits heruntergeladene Bilder lassen sich nicht zurueckrufen.
 Die globale Public-Galerie zeigt niemals Reisebilder.
 
-Berichtsspeicherung erwartet zusaetzlich `galleryImages` als sortiertes
-Array `{ "assetId": "UUID", "caption": "..." }`. Bilder im Text werden als
+Berichtsspeicherung erwartet `pages` in der gewuenschten Reihenfolge.
+Eine Seite hat `{ "id": "UUID", "title": "...", "contentHtml": "...",
+"galleryImages": [{ "assetId": "UUID", "caption": "..." }] }`.
+Neue IDs werden vom Editor erzeugt oder bei fehlendem `id` von der API
+vergeben. `status` und `publishedAt` sind nicht schreibbar; die eigene
+Seitenfreigabe erfolgt ausschliesslich ueber die Status-Endpunkte.
+Bilder im Text werden als
 `<figure><img data-asset-id="UUID"><figcaption>...</figcaption></figure>`
 referenziert. Die API validiert alle IDs gegen Reisebilder, speichert
 Zuordnungen und Text atomar unter der Berichtsversion und setzt erst bei
 oeffentlicher Ausgabe eigene Bild-URLs und den gespeicherten Alternativtext.
 Vom Client gelieferte `src`-/`alt`-Attribute werden nicht uebernommen.
-Ein weggelassenes `galleryImages` entspricht einer leeren Galerie.
+Textbilder speichern ihre Groesse als `data-image-size="100"`, `"250"` oder
+`"500"` am `img`-Element. Andere Werte werden abgewiesen; ohne Angabe gilt
+250. Die Public-API erzeugt daraus sichere `width`-/`height`-Attribute und
+ignoriert vom Client gelieferte Groessenattribute oder Styles.
+Ein weggelassenes `galleryImages` entspricht einer leeren Seitengalerie.
+Alte einseitige Payloads mit `contentHtml` / `galleryImages` werden fuer
+einseitige Berichte weiter angenommen; sie koennen keine mehrseitigen Berichte
+ueberschreiben. Die Public-API liefert nur freigegebene `pages`; die alten
+Felder `contentHtml` und `images` spiegeln die erste freigegebene Seite.
 
 ### Homepage und RSS
 
 - Liste: `http://localhost:18431/reisen/`
 - Einzelbericht: `/reisen/bericht/?slug=mein-bericht`
+- Bestimmte Berichtsseite: `/reisen/bericht/?slug=mein-bericht&seite=SEITEN-UUID`
 - RSS 2.0: `/api/public/reports/rss` (auch im Seitenkopf als Feed verlinkt)
 
 Listen haben 20 Eintraege pro Seite; der Feed enthaelt die neuesten 50
 veroeffentlichten Berichte mit Kurzbeschreibung und stabiler GUID.
+Auf der Homepage blaettern **Vorherige / Naechste Seite** oder die Seitenauswahl
+zwischen freigegebenen Seiten. Seitenlinks bleiben beim Umsortieren stabil;
+Browser-Zurueck und direkte Links funktionieren. Entwurfsseiten sind weder
+in der Auswahl noch in der Public-Antwort enthalten. Ein Klick auf ein Foto
+oeffnet die Grossansicht; Pfeiltasten und Pfeil-Buttons blaettern ausschliesslich
+durch die Fotos der aktuellen Seite, zuerst im Text, dann in der Galerie.
+Dasselbe Foto im Text und in der Galerie wird dabei nur einmal gezaehlt.
 Entwuerfe sind ohne Verwaltungssitzung nicht erreichbar. Die oeffentlichen
 Seiten benoetigen JavaScript fuer die aktuelle Liste und Detailansicht.
 Fehler werden sichtbar angezeigt, nicht als leere erfolgreiche Antwort.
@@ -284,14 +340,63 @@ RSS-Links, ohne Pfad oder abschliessenden Slash. Lokal gilt standardmaessig
 Bestehende `.env.docker.mac`/`.env.docker.synology` um `SITE_URL` ergaenzen.
 Backend und Container nach Konfigurationsaenderungen neu starten bzw. erstellen.
 
+### Deutsch und Englisch
+
+Im Seitenkopf wechseln **Deutsch / English** zwischen den deutschen Seiten
+und der englischen Version unter `/en/`. Alle bisherigen deutschen URLs
+bleiben erhalten. Navigation, feste Texte, Status-/Fehlermeldungen,
+Seitenauswahl und Foto-Grossansicht sind in beiden Sprachen verfuegbar.
+Die Sprachwahl bleibt beim Navigieren erhalten; der Sprachwechsel eines
+Reiseberichts behaelt dessen `slug` und aktuelle `seite` bei.
+
+Die Verwaltung bleibt deutschsprachig. Unter **Englische Uebersetzung**
+koennen folgende Inhalte separat gepflegt werden:
+
+- Reisebericht: `titleEn`, `excerptEn`, `destinationEn`.
+- Berichtsseite: `titleEn`, `contentHtmlEn` im eigenen visuellen Editor.
+  **Im englischen Text einfuegen** fuegt das gewaehlte Foto in diesen Editor
+  ein; Bildgroessen und bearbeitbare Bildunterschriften funktionieren wie
+  im deutschen Editor. Textbilder und deren Reihenfolge duerfen je Sprache
+  unterschiedlich sein.
+- Galerie-Bildunterschrift: `captionEn`, unabhaengig von der deutschen
+  Bildunterschrift derselben Seite.
+- Bild/Fotogruppe: `titleEn`, `altTextEn`, `descriptionEn`. Englische Titel
+  und Alternativtexte koennen bereits beim Einzel-/Mehrfachupload erfasst
+  werden. Bei Multi-Fotogruppen gelten gemeinsame Uebersetzungen fuer alle Fotos.
+
+Alle englischen Felder sind optional. Ist eine Uebersetzung leer, verwendet
+die englische Ausgabe feldweise den deutschen Inhalt. Ein leerer englischer
+Editor (auch mit leeren Absaetzen) verwendet den gesamten deutschen Seitentext.
+Es findet keine automatische Uebersetzung statt. Beide Sprachen werden mit
+derselben Berichtsversion/Bildrevision gespeichert und gemeinsam je Seite
+veroeffentlicht oder zurueckgenommen. Entwurfsseiten bleiben in beiden
+Sprachen privat.
+
+Die oeffentlichen Listen, Berichtsdetails und RSS akzeptieren `?lang=en`
+(Standard: `de`; andere Werte ergeben HTTP 400). Beispiele:
+`/api/public/media?category=SAMMY&lang=en`,
+`/api/public/reports?lang=en`,
+`/api/public/reports/meine-reise?lang=en` und
+`/api/public/reports/rss?lang=en`. Der englische Feed verlinkt englische Seiten.
+Die Bilddateien werden nicht dupliziert; Bildfreigaben beruecksichtigen
+Referenzen aus beiden Sprachfassungen. Alte Speicheranfragen ohne englische
+Felder erhalten vorhandene Uebersetzungen.
+
+Vor dem Backend-Neustart **`pnpm db:deploy`** ausfuehren (in Docker den
+Migrationscontainer verwenden). Die Migration `20261016160000_english_content`
+ergaenzt leere englische Felder; bestehende deutsche Inhalte und Freigaben
+bleiben unveraendert.
+
 | API | Zweck |
 | --- | --- |
 | `GET /api/admin/reports?page=1` | Geschuetzte Berichtsliste |
 | `POST /api/admin/reports` | Neuen Entwurf anlegen |
 | `GET /api/admin/reports/:id` | Bericht zum Bearbeiten laden |
 | `POST /api/admin/reports/:id/save` | Eingaben mit aktueller `version` speichern |
-| `POST /api/admin/reports/:id/publish` | Gespeicherte Version veroeffentlichen |
-| `POST /api/admin/reports/:id/unpublish` | Veroeffentlichung zuruecknehmen |
+| `POST /api/admin/reports/:id/pages/:pageId/publish` | Einzelne Seite freigeben; erste Seite schaltet Bericht frei |
+| `POST /api/admin/reports/:id/pages/:pageId/unpublish` | Einzelne Seite zuruecknehmen |
+| `POST /api/admin/reports/:id/publish` | Kompatibilitaet: alle gespeicherten Seiten veroeffentlichen |
+| `POST /api/admin/reports/:id/unpublish` | Alle Seiten zuruecknehmen |
 | `POST /api/admin/reports/:id/delete` | Entwurf loeschen |
 | `GET /api/public/reports?page=1` | Oeffentliche Berichtsliste |
 | `GET /api/public/reports/:slug` | Einzelner veroeffentlichter Bericht |
@@ -304,7 +409,7 @@ wie der Login. Die Homepage proxyt ausschliesslich `/api/public/*`, niemals
 die Verwaltungs- oder Login-Endpunkte.
 
 Bei Updates vor dem Start `pnpm db:deploy` bzw. den Docker-Migrationscontainer
-ausfuehren, damit `contentHtml` und `version` in der Datenbank vorhanden sind.
+ausfuehren, damit auch die neuen Berichtsseiten und Bildzuordnungen vorhanden sind.
 
 ## Bilder verwalten und Galerien
 
@@ -353,9 +458,26 @@ schaltet ihn in `/kreationen/` bzw. `/sammy/` frei, ohne Homepage-Neubuild.
 veroeffentlichten Bildern sind sofort oeffentlich. Revisionen verhindern
 gleichzeitiges Ueberschreiben; bei Konflikten erst **Bildliste neu laden**.
 Der Kategorie-Filter in der Bildbibliothek laedt die Auswahl automatisch.
-Die Listen enthalten 20 Bilder pro Seite und die Galerien benoetigen JavaScript.
+Die Listen enthalten 20 Einzelbilder bzw. Fotogruppen pro Seite und die Galerien benoetigen JavaScript.
 Reisebilder werden nur mit ihren Berichten veroeffentlicht, nicht ueber diese
 Bildliste. Sie koennen bereits vor dem Schreiben eines Berichts hochgeladen werden.
+
+### Fotos auf der Homepage vergroessern
+
+Ein Klick auf ein Foto in Sammy, Meine Kreationen oder einem Reisebericht
+(im Text oder in der Berichtsgalerie) oeffnet eine bildschirmfuellende Grossansicht.
+Das vollstaendige Foto wird im richtigen Seitenverhaeltnis so gross wie
+moeglich dargestellt, ohne Beschnitt. Verwendet wird die groesste gespeicherte
+Bildversion (maximal 2560 Pixel), nicht das unverkleinerte Upload-Original.
+Auch einzelne Fotos innerhalb einer Multi-Fotogruppe lassen sich so oeffnen.
+In einer Multi-Fotogruppe blaettern **Pfeil links / rechts** oder die beiden
+**Pfeil-Buttons** zwischen den Fotos dieser Gruppe. Die Anzeige **Foto X von Y**
+zeigt die aktuelle Position. Die Ansicht startet beim angeklickten Foto und
+stoppt am ersten bzw. letzten Foto; dort ist der jeweilige Button deaktiviert.
+Einzelbilder haben keine Blaetter-Buttons. Andere Gruppen bleiben getrennt.
+Die Ansicht laesst sich mit **Schliessen** oder **Escape** verlassen.
+Mit der Tastatur ein Foto per Tab auswaehlen und per Enter oder Leertaste oeffnen;
+beim Schliessen kehrt der Fokus zum Foto zurueck.
 
 ### Sammy und Meine Kreationen einfach sortieren
 
@@ -388,9 +510,45 @@ Sortierung und Versionsanpassungen erfolgen atomar; veraltete Bildformulare
 koennen die neue Reihenfolge nicht ueberschreiben. Die automatisch sortierbare
 Kategorie umfasst hoechstens 1.000.001 Bilder (bestehender Sortierwertbereich).
 
-### Mehrfachupload mit Warteschlange
+### Multi-Fotogruppen fuer Sammy und Meine Kreationen
 
-Unter **Mehrere Bilder hochladen** mehrere Dateien auf einmal auswaehlen.
+**Multi-Fotogruppe hochladen** im Bereich **Sammy** oder **Meine Kreationen**
+oeffnet einen gemeinsamen Upload fuer 2 bis 100 Fotos derselben Kategorie.
+Titel und Alternativtext werden **einmal fuer die ganze Gruppe** eingegeben.
+Nach den einzelnen Uploads wird die Gruppe gespeichert. Die Homepage zeigt
+alle Fotos zusammen in einem umrahmten Galerieeintrag mit einem gemeinsamen
+Titel; jedes Foto verwendet den gemeinsamen Alternativtext.
+
+In Bildliste, Sortierung und Uebersicht zaehlt eine Fotogruppe als **ein Eintrag**.
+Bearbeitung, Veroeffentlichung, Ruecknahme und Loeschung gelten immer fuer
+die ganze Gruppe. Die Bearbeitung zeigt Vorschauen aller Fotos; auch
+Beschreibung und Kategorie werden gemeinsam gepflegt. Ein Wechsel ist nur
+zwischen Sammy und Meine Kreationen moeglich, nie zu Reiseberichten.
+Die Gruppe wird bei der Seitennavigation nicht aufgeteilt. Bestehende
+Einzelbilder bleiben unveraendert; gleiche Titel allein bilden keine Gruppe.
+
+Bei Uploadfehlern einzelne Fotos erneut versuchen oder fehlgeschlagene
+Eintraege entfernen und Ersatzdateien hinzufuegen. Gemeinsame Angaben bleiben
+ab dem ersten begonnenen Upload gesperrt. Erst wenn alle mindestens zwei Fotos
+gespeichert sind, wird die Gruppe angelegt; eine verlorene Antwort kann mit
+**Warteschlange starten / fortsetzen** sicher wiederholt werden. Bis dahin
+bleiben erfolgreiche Uploads als private Einzelentwuerfe erhalten. Bei Abbruch
+oder Schliessen des Tabs sind diese in der Bildliste einzeln bereinigbar;
+die Warteschlange selbst wird nicht dauerhaft gespeichert.
+Nach **Fotogruppe gespeichert** die erledigten Eintraege entfernen, um
+eine neue Gruppe zu beginnen.
+
+Die API `POST /api/admin/media/group` erwartet `{ "ids": ["UUID", "UUID"] }`
+in der gewuenschten Bildreihenfolge. Sie gruppiert ausschliesslich unveraenderte,
+unzugeordnete Entwuerfe gleicher Kategorie mit identischem Titel und Alternativtext.
+Die erste ID ist die gemeinsame Verwaltungs-ID und das erste Foto; die weiteren
+Foto-IDs stehen in `children`. Diese IDs sind nur fuer Bild-URLs vorgesehen;
+Verwaltungsaktionen erfolgen ueber die gemeinsame ID.
+Die neue Datenbankmigration vor dem Backend-Start mit `pnpm db:deploy` anwenden.
+
+### Mehrere Einzelbilder mit Warteschlange
+
+Unter **Mehrere Einzelbilder hochladen** in der **Bildbibliothek** mehrere Dateien auf einmal auswaehlen.
 Die Schaltflaeche in der Bildliste oeffnet dafuer eine separate Upload-Seite.
 Je Datei den vorgeschlagenen Titel pruefen und einen echten Alternativtext
 ergaenzen. In der allgemeinen Bildverwaltung wird die Kategorie je Datei
@@ -451,6 +609,8 @@ fuer ein anderes Bild einen neuen Entwurf hochladen.
 
 Metadaten bestehen aus `category` (`DRAWING`, `SAMMY` oder `TRAVEL`), `title`,
 `altText`, `description` (String, leer erlaubt) und `sortOrder`.
+Optional: `titleEn` (maximal 200 Zeichen), `altTextEn` (500) und
+`descriptionEn` (2000); leere Strings aktivieren den deutschen Ersatz.
 Nur beim Upload ist optional `uploadKey` (UUID) fuer sichere Wiederholungen erlaubt.
 Status- und Loeschbefehle erwarten `{ "revision": 0 }` mit der aktuellen
 Revision. Alle schreibenden APIs verlangen exakte `ADMIN_ORIGIN` und

@@ -7,7 +7,9 @@ import { MediaOrderComponent } from './media-order.component';
 
 interface Asset {
   id: string; revision: number; title: string; altText: string; description: string | null;
+  titleEn: string; altTextEn: string; descriptionEn: string;
   category: MediaCategory; status: 'DRAFT' | 'PUBLISHED'; sortOrder: number;
+  children: { id: string }[];
 }
 interface MediaList { items: Asset[]; total: number; page: number; pageSize: number; }
 
@@ -36,6 +38,9 @@ export class MediaComponent implements OnInit {
   title = '';
   altText = '';
   description = '';
+  titleEn = '';
+  altTextEn = '';
+  descriptionEn = '';
   category: MediaCategory = 'DRAWING';
   sortOrder = 0;
   private initial = '';
@@ -52,7 +57,7 @@ export class MediaComponent implements OnInit {
       });
     } else if (this.mode === 'list') void this.run(() => this.load());
   }
-  private snapshot() { return JSON.stringify([this.title, this.altText, this.description, this.category, this.sortOrder]); }
+  private snapshot() { return JSON.stringify([this.title, this.altText, this.description, this.titleEn, this.altTextEn, this.descriptionEn, this.category, this.sortOrder]); }
   dirty() { return !!this.file || this.snapshot() !== this.initial; }
   canLeave(includeQueue = true) {
     if (this.queue?.running()) { this.error.set('Bitte den aktuellen Upload abwarten.'); return false; }
@@ -100,6 +105,7 @@ export class MediaComponent implements OnInit {
     this.title = asset.title;
     this.altText = asset.altText;
     this.description = asset.description ?? '';
+    this.titleEn = asset.titleEn; this.altTextEn = asset.altTextEn; this.descriptionEn = asset.descriptionEn;
     this.category = asset.category;
     this.sortOrder = asset.sortOrder;
     this.initial = this.snapshot();
@@ -111,13 +117,16 @@ export class MediaComponent implements OnInit {
     this.selected = null;
     this.file = null;
     this.title = ''; this.altText = ''; this.description = ''; this.category = this.gallery ?? 'DRAWING'; this.sortOrder = 0;
+    this.titleEn = ''; this.altTextEn = ''; this.descriptionEn = '';
     this.initial = this.snapshot();
   }
   async save() {
     if (this.queue?.running()) return;
     let saved = false;
     await this.run(async () => {
-      const metadata = { title: this.title, altText: this.altText, description: this.description, category: this.category, sortOrder: this.sortOrder };
+      const subject = this.selected?.children.length ? 'Fotogruppe' : 'Bild';
+      const metadata = { title: this.title, altText: this.altText, description: this.description,
+        titleEn: this.titleEn, altTextEn: this.altTextEn, descriptionEn: this.descriptionEn, category: this.category, sortOrder: this.sortOrder };
       if (this.selected) {
         await this.auth.request(`/api/admin/media/${this.selected.id}/save`, { ...metadata, revision: this.selected.revision });
       } else {
@@ -128,7 +137,7 @@ export class MediaComponent implements OnInit {
         await this.auth.request('/api/admin/media', body);
       }
       this.reset();
-      this.success.set('Bild gespeichert.');
+      this.success.set(`${subject} gespeichert.`);
       this.changed.emit();
       saved = true;
     });
@@ -136,16 +145,18 @@ export class MediaComponent implements OnInit {
   }
   async action(asset: Asset, action: 'publish' | 'unpublish' | 'delete') {
     if (!this.canLeave(false)) return;
+    const subject = asset.children.length ? `Fotogruppe mit ${asset.children.length + 1} Fotos` : 'Bild';
     const prompts = {
-      publish: `Bild "${asset.title}" oeffentlich veroeffentlichen?`,
-      unpublish: `Bild "${asset.title}" aus der oeffentlichen Galerie entfernen?`,
-      delete: `Entwurf "${asset.title}" und die Bilddatei unwiderruflich loeschen?`,
+      publish: `${subject} "${asset.title}" oeffentlich veroeffentlichen?`,
+      unpublish: `${subject} "${asset.title}" aus der oeffentlichen Galerie entfernen?`,
+      delete: `${subject} "${asset.title}" und alle zugehoerigen Bilddateien unwiderruflich loeschen?`,
     };
     if (!confirm(prompts[action])) return;
     await this.run(async () => {
       await this.auth.request(`/api/admin/media/${asset.id}/${action}`, { revision: asset.revision });
       this.reset();
-      this.success.set(action === 'publish' ? 'Bild veroeffentlicht.' : action === 'unpublish' ? 'Veroeffentlichung zurueckgenommen.' : 'Bild geloescht.');
+      const label = asset.children.length ? 'Fotogruppe' : 'Bild';
+      this.success.set(action === 'publish' ? `${label} veroeffentlicht.` : action === 'unpublish' ? 'Veroeffentlichung zurueckgenommen.' : `${label} geloescht.`);
       this.changed.emit();
       await this.load();
     });

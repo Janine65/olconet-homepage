@@ -5,6 +5,7 @@ import { pageNumber, record, reportId, reportVersion } from '../travel/travel.in
 import { MAX_UPLOAD_BYTES } from './image';
 import { Multipart } from './multipart';
 import { MediaService } from './media.service';
+import { language } from '../language';
 
 const revision = (body: unknown) => reportVersion(record(body, ['revision'])['revision']);
 const imageResponse = (buffer: Buffer) => new StreamableFile(buffer, { type: 'image/webp', length: buffer.length });
@@ -26,6 +27,9 @@ export class MediaController {
   @Post('order/move')
   move(@Body() body: unknown) { return this.media.move(body); }
 
+  @Post('group')
+  group(@Body() body: unknown) { return this.media.group(body); }
+
   @Get(':id/image')
   async image(@Param('id') id: string) { return imageResponse(await this.media.image(reportId(id), false)); }
 
@@ -34,7 +38,7 @@ export class MediaController {
 
   @Post()
   @Multipart()
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 1, fieldSize: 16000, parts: 2 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 1, fieldSize: 32000, parts: 2 } }))
   upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: Record<string, unknown>) {
     if (Object.keys(body).length !== 1 || typeof body['metadata'] !== 'string') {
       throw new BadRequestException('Nur eine Bilddatei und metadata sind erlaubt.');
@@ -64,8 +68,8 @@ export class PublicMediaController {
   constructor(@Inject(MediaService) private readonly media: MediaService) {}
 
   @Get()
-  list(@Query('page') page: unknown, @Query('category') category: unknown) {
-    return this.media.list(pageNumber(page), category, true);
+  list(@Query('page') page: unknown, @Query('category') category: unknown, @Query('lang') lang: unknown) {
+    return this.media.list(pageNumber(page), category, true, language(lang));
   }
 
   @Get(':id/image')

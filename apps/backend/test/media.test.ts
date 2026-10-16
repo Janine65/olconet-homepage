@@ -2,7 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import sharp from 'sharp';
 import { normalizeImage, MAX_UPLOAD_BYTES } from '../src/media/image';
-import { mediaInput, galleryCategory } from '../src/media/media.input';
+import { mediaInput, galleryCategory, photoGroupInput } from '../src/media/media.input';
+
+test('Fotogruppen verlangen 2 bis 100 eindeutige Bild-IDs und keine fremden Felder', () => {
+  const ids = Array.from({ length: 101 }, (_, i) => `11111111-1111-4111-8111-${String(i).padStart(12, '0')}`);
+  assert.deepEqual(photoGroupInput({ ids: ids.slice(0, 2) }), ids.slice(0, 2));
+  assert.equal(photoGroupInput({ ids: ids.slice(0, 100) }).length, 100);
+  for (const body of [
+    {}, { ids: [] }, { ids: ids.slice(0, 1) }, { ids }, { ids: [ids[0], ids[0]] },
+    { ids: [ids[0], 2] }, { ids: [ids[0], '../../x'] }, { ids: ids.slice(0, 2), category: 'TRAVEL' },
+  ]) assert.throws(() => photoGroupInput(body));
+});
 
 test('Bilddaten verlangen Kategorie, Titel, Alternativtext und begrenzte Sortierung', () => {
   const input = { category: 'SAMMY', title: ' Sammy ', altText: ' Hund am See ', description: '', sortOrder: 0 };

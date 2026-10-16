@@ -9,7 +9,7 @@
   @if (editing()) {
     <form #reportForm="ngForm" (ngSubmit)="save()" class="report-form">
       <h3>{{ current() ? 'Bericht bearbeiten' : 'Neuer Entwurf' }}</h3>
-      <p>{{ current()?.status === 'PUBLISHED' ? 'Veroeffentlicht: Gespeicherte Aenderungen sind sofort oeffentlich.' : 'Entwurf: Nur in der Verwaltung sichtbar.' }}</p>
+      <p>{{ current()?.status === 'PUBLISHED' ? 'Bericht sichtbar: Aenderungen an veroeffentlichten Seiten sind nach dem Speichern sofort oeffentlich. Neue Seiten bleiben Entwuerfe.' : 'Bericht privat: Die erste veroeffentlichte Seite macht ihn auf der Homepage sichtbar.' }}</p>
       @if (mode === 'new' && current(); as saved) {
         <p>Dieser Entwurf ist gespeichert. <a [routerLink]="['/reiseberichte', saved.id]">Gespeicherten Bericht direkt oeffnen</a>
           (offene Uploads werden beim Wechsel verworfen).</p>
@@ -27,21 +27,56 @@
       <textarea id="report-excerpt" name="excerpt" maxlength="1000" rows="3" [(ngModel)]="form.excerpt" (ngModelChange)="touch()" [disabled]="busy()"></textarea>
       <label for="report-destination">Reiseziel (optional)</label>
       <input id="report-destination" name="destination" maxlength="200" [(ngModel)]="form.destination" (ngModelChange)="touch()" [disabled]="busy()">
+      <h3>Englische Uebersetzung (optional)</h3>
+      <p class="hint">Leere englische Felder verwenden den deutschen Inhalt. Beide Sprachen werden gemeinsam gespeichert und veroeffentlicht.</p>
+      <label for="report-title-en">Titel (Englisch)</label>
+      <input id="report-title-en" name="titleEn" lang="en" maxlength="200" [(ngModel)]="form.titleEn" (ngModelChange)="touch()" [disabled]="busy()">
+      <label for="report-excerpt-en">Kurzbeschreibung (Englisch)</label>
+      <textarea id="report-excerpt-en" name="excerptEn" lang="en" maxlength="1000" rows="3" [(ngModel)]="form.excerptEn" (ngModelChange)="touch()" [disabled]="busy()"></textarea>
+      <label for="report-destination-en">Reiseziel (Englisch)</label>
+      <input id="report-destination-en" name="destinationEn" lang="en" maxlength="200" [(ngModel)]="form.destinationEn" (ngModelChange)="touch()" [disabled]="busy()">
       <div class="date-fields">
         <div><label for="report-start">Reisebeginn (optional)</label><input id="report-start" name="travelStart" type="date" [(ngModel)]="form.travelStart" (ngModelChange)="touch()" [disabled]="busy()"></div>
         <div><label for="report-end">Reiseende (optional)</label><input id="report-end" name="travelEnd" type="date" [(ngModel)]="form.travelEnd" (ngModelChange)="touch()" [disabled]="busy()"></div>
       </div>
-      <p id="report-text-label"><strong>Berichtstext</strong></p>
+      <section aria-label="Seiten des Reiseberichts">
+        <h3>Berichtsseiten</h3>
+        <p>Alle Seiten werden gemeinsam gespeichert, aber einzeln veroeffentlicht. Der Seitenwechsel im Editor verwirft keine Texte oder Fotos.</p>
+        <ol>
+          @for (page of form.pages; track page.id; let i = $index) {
+            <li>
+              <button type="button" (click)="selectPage(i)" [attr.aria-current]="i === pageIndex ? 'true' : null" [disabled]="busy() || !!queue?.running()">
+                {{ i + 1 }}. {{ page.title || 'Ohne Seitentitel' }} · {{ currentPage(page.id)?.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }}{{ i === pageIndex ? ' (ausgewaehlt)' : '' }}
+              </button>
+              <button type="button" (click)="movePage(i, -1)" [disabled]="busy() || !!queue?.running() || i === 0" [attr.aria-label]="'Seite ' + (i + 1) + ' nach vorne'">Vor</button>
+              <button type="button" (click)="movePage(i, 1)" [disabled]="busy() || !!queue?.running() || i === form.pages.length - 1" [attr.aria-label]="'Seite ' + (i + 1) + ' nach hinten'">Zurueck</button>
+            </li>
+          }
+        </ol>
+        <button type="button" (click)="addPage()" [disabled]="busy() || !!queue?.running() || form.pages.length >= 100">Seite hinzufuegen</button>
+        <button type="button" class="danger" (click)="removePage()" [disabled]="busy() || !!queue?.running() || form.pages.length <= 1">Ausgewaehlte Seite entfernen</button>
+      </section>
+      <h3>Seite {{ pageIndex + 1 }} von {{ form.pages.length }}</h3>
+      <p>{{ currentPage()?.status === 'PUBLISHED' ? 'Diese Seite ist veroeffentlicht.' : 'Diese Seite ist ein privater Entwurf.' }}</p>
+      <label for="report-page-title">Seitentitel (optional)</label>
+      <input id="report-page-title" name="pageTitle" maxlength="200" [(ngModel)]="activePage.title" (ngModelChange)="touch()" [disabled]="busy()">
+      <label for="report-page-title-en">Seitentitel (Englisch, optional)</label>
+      <input id="report-page-title-en" name="pageTitleEn" lang="en" maxlength="200" [(ngModel)]="activePage.titleEn" (ngModelChange)="touch()" [disabled]="busy()">
+      <p id="report-text-label"><strong>Text dieser Seite</strong></p>
+      @for (page of [activePage]; track page.id) {
       @defer (on immediate) {
-        <app-rich-editor #richEditor [content]="form.contentHtml" [images]="reportImages()" (contentChange)="form.contentHtml = $event; touch()" [disabled]="busy() || !!queue?.running()" />
+        <app-rich-editor #richEditor [content]="page.contentHtml" [images]="reportImages()" (contentChange)="page.contentHtml = $event; touch()" [disabled]="busy() || !!queue?.running()" />
+        <p><strong>Text dieser Seite (Englisch, optional)</strong></p>
+        <app-rich-editor #englishEditor language="en" [content]="page.contentHtmlEn" [images]="reportImages()" (contentChange)="page.contentHtmlEn = $event; touch()" [disabled]="busy() || !!queue?.running()" />
       } @placeholder {
         <p role="status">Editor wird geladen ...</p>
       } @error {
         <p class="error" role="alert">Der Editor konnte nicht geladen werden. Bitte die Seite neu laden.</p>
       }
-      <p class="hint">Maximal 100000 UTF-8-Bytes und 100 verschiedene Reisebilder. Externe Bilder, Links und eingebettete Inhalte werden entfernt.</p>
+      }
+      <p class="hint">Maximal 100 Seiten, je Sprache insgesamt 100000 UTF-8-Bytes Berichtstext und 100 verschiedene Reisebilder pro Bericht. Externe Bilder, Links und eingebettete Inhalte werden entfernt.</p>
       <div class="report-images">
-        <h3>Bilder im Text und Berichtsgalerie</h3>
+        <h3>Bilder im Text und Galerie dieser Seite</h3>
         <p>Im Editor die Einfuegeposition anklicken, dann ein Bild waehlen und „Im Text einfuegen“ verwenden.
           Die Bildunterschrift unter dem eingefuegten Bild ist im Editor bearbeitbar.
           Galerie und Text koennen dasselbe Bild verwenden.</p>
@@ -52,24 +87,36 @@
         </select>
         <label for="report-image-caption">Bildunterschrift beim Einfuegen (optional)</label>
         <input id="report-image-caption" name="imageCaption" [(ngModel)]="imageCaption" maxlength="500" [disabled]="busy()">
+        <label for="report-image-caption-en">Bildunterschrift beim Einfuegen (Englisch, optional)</label>
+        <input id="report-image-caption-en" name="imageCaptionEn" lang="en" [(ngModel)]="imageCaptionEn" maxlength="500" [disabled]="busy()">
+        <label for="report-image-size">Bildgroesse im Text</label>
+        <select id="report-image-size" name="imageSize" [(ngModel)]="imageSize" [disabled]="busy() || !!queue?.running()">
+          <option [ngValue]="100">Klein (100 x 100 Pixel)</option>
+          <option [ngValue]="250">Mittel (250 x 250 Pixel)</option>
+          <option [ngValue]="500">Gross (500 x 500 Pixel)</option>
+        </select>
+        <p class="hint">Das ganze Foto wird ohne Beschnitt oder Verzerrung eingepasst. Zum spaeteren Aendern im Editor das Bild markieren
+          oder seine Bildunterschrift anklicken und oben eine Bildgroesse waehlen. Die Grossansicht bleibt unveraendert.</p>
         <div class="actions">
           <button type="button" (click)="insertImage()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im Text einfuegen</button>
-          <button type="button" (click)="addSelectedGallery()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Zur Berichtsgalerie hinzufuegen</button>
+          <button type="button" (click)="insertImage(true)" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im englischen Text einfuegen</button>
+          <button type="button" (click)="addSelectedGallery()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Zur Seitengalerie hinzufuegen</button>
           <button type="button" (click)="loadImages(imagePage - 1)" [disabled]="busy() || imageLoading() || imagePage <= 1">Vorherige Reisebild-Auswahl</button>
           <button type="button" (click)="loadImages(imagePage + 1)" [disabled]="busy() || imageLoading() || imagePage * 20 >= imageTotal()">Naechste Reisebild-Auswahl</button>
           <button type="button" (click)="loadImages()" [disabled]="busy() || imageLoading()">Reisebilder neu laden</button>
         </div>
         <p>Bildauswahl Seite {{ imagePage }} · {{ imageTotal() }} Reisebilder. Bereits zugeordnete Bilder bleiben in der Auswahl.</p>
         <ol>
-          @for (image of form.galleryImages; track image.assetId; let i = $index) {
+          @for (image of activePage.galleryImages; track image.assetId; let i = $index) {
             <li>
               <img class="report-image-preview" [src]="'/api/admin/media/' + image.assetId + '/image'" [alt]="imageName(image.assetId)" loading="lazy" (error)="error.set('Ein Reisebild konnte nicht geladen werden. Bitte Upload-Speicher pruefen.')">
               <strong>{{ imageName(image.assetId) }}</strong>
               <label>Galerie-Bildunterschrift <input [name]="'caption-' + image.assetId" [(ngModel)]="image.caption" (ngModelChange)="touch()" maxlength="500" [disabled]="busy()"></label>
+              <label>Galerie-Bildunterschrift (Englisch) <input [name]="'caption-en-' + image.assetId" lang="en" [(ngModel)]="image.captionEn" (ngModelChange)="touch()" maxlength="500" [disabled]="busy()"></label>
               <div class="actions">
                 <button type="button" (click)="moveImage(i, -1)" [disabled]="busy() || i === 0">Bild nach vorne</button>
-                <button type="button" (click)="moveImage(i, 1)" [disabled]="busy() || i === form.galleryImages.length - 1">Bild nach hinten</button>
-                <button type="button" class="secondary" (click)="removeGallery(i)" [disabled]="busy()">Aus Berichtsgalerie entfernen</button>
+                <button type="button" (click)="moveImage(i, 1)" [disabled]="busy() || i === activePage.galleryImages.length - 1">Bild nach hinten</button>
+                <button type="button" class="secondary" (click)="removeGallery(i)" [disabled]="busy()">Aus Seitengalerie entfernen</button>
               </div>
             </li>
           }
@@ -77,7 +124,7 @@
         <p class="hint">Entfernen aus der Galerie entfernt keine Bilder im Text. Dort das Bild im Editor markieren und loeschen.
           Bilddateien bleiben in der Bildverwaltung. Erst Speichern uebernimmt die Zuordnung.</p>
         <app-upload-queue category="TRAVEL" inputId="report-upload-files" [disabled]="busy()" (uploaded)="uploaded($event)" />
-        <p class="hint">Hier hochgeladene Bilder werden zur ungespeicherten Berichtsgalerie hinzugefuegt.
+        <p class="hint">Hier hochgeladene Bilder werden zur ungespeicherten Galerie der ausgewaehlten Seite hinzugefuegt.
           Fuer „nur im Text“ anschliessend aus der Galerie entfernen. Entwurfsbilder sind nicht oeffentlich.
           Ein in mehreren Berichten verwendetes Bild bleibt ueber andere veroeffentlichte Berichte erreichbar.</p>
       </div>
@@ -85,9 +132,14 @@
       <div class="actions">
         <button type="submit" [disabled]="busy() || reportForm.invalid || !!queue?.running()">Speichern</button>
         @if (current(); as report) {
-          <button type="button" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changeStatus(report.status !== 'PUBLISHED')">
-            {{ report.status === 'PUBLISHED' ? 'Veroeffentlichung zuruecknehmen' : 'Veroeffentlichen' }}
-          </button>
+          @if (currentPage(); as savedPage) {
+            <button type="button" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changePageStatus(savedPage.status !== 'PUBLISHED')">
+              {{ savedPage.status === 'PUBLISHED' ? 'Seite zuruecknehmen' : 'Seite veroeffentlichen' }}
+            </button>
+          }
+          @if (report.status === 'PUBLISHED') {
+            <button type="button" class="secondary" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changeStatus(false)">Alle Seiten zuruecknehmen</button>
+          }
           @if (report.status === 'DRAFT') {
             <button type="button" class="danger" [disabled]="busy() || dirty() || !!queue?.running()" (click)="delete()">Entwurf loeschen</button>
           }

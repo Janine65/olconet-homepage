@@ -81,7 +81,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.equal((await login(first.email, 'x'.repeat(129))).status, 400);
     const malformed = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: '{' });
     assert.equal(malformed.status, 400);
-    const huge = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ value: 'x'.repeat(140000) }) });
+    const huge = await fetch(`${base}/api/auth/login`, { method: 'POST', headers, body: JSON.stringify({ value: 'x'.repeat(270000) }) });
     assert.equal(huge.status, 413);
   });
 

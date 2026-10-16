@@ -1,16 +1,16 @@
 <section class="reports">
   <div class="section-heading">
-    <h1 tabindex="-1">{{ label }}{{ mode === 'sort' ? ' sortieren' : mode === 'upload' ? ': Mehrfachupload' : mode === 'edit' ? ': Bild bearbeiten' : mode === 'new' ? ': Bild hochladen' : '' }}</h1>
+    <h1 tabindex="-1">{{ label }}{{ mode === 'sort' ? ' sortieren' : mode === 'upload' ? (gallery ? ': Multi-Fotogruppe' : ': Mehrfachupload') : mode === 'edit' ? ': Bild oder Fotogruppe bearbeiten' : mode === 'new' ? ': Bild hochladen' : '' }}</h1>
     @if (mode === 'list') {
       <a class="button-link" [routerLink]="[basePath, 'neu']">Neues Bild</a>
-      <a class="button-link secondary" [routerLink]="[basePath, 'upload']">Mehrere Bilder hochladen</a>
+      <a class="button-link secondary" [routerLink]="[basePath, 'upload']">{{ gallery ? 'Multi-Fotogruppe hochladen' : 'Mehrere Einzelbilder hochladen' }}</a>
     } @else { <a [routerLink]="basePath">Zurueck zur Bildliste</a> }
   </div>
   @if (mode === 'upload' || mode === 'new') {
   <p>Alle Uploads sind private Entwuerfe. Reisebilder werden nur mit ihrem Bericht veroeffentlicht. JPEG, PNG oder WebP, maximal 10 MiB und 40 Millionen Pixel. Bilder werden auf maximal 2560 Pixel verkleinert und ohne GPS-/EXIF-Metadaten als WebP gespeichert.</p>
   }
   @if (mode === 'upload') {
-    <app-upload-queue inputId="media-upload-files" [category]="gallery" [disabled]="busy()" (finished)="uploaded()" />
+    <app-upload-queue inputId="media-upload-files" [category]="gallery" [group]="!!gallery" [disabled]="busy()" (finished)="uploaded()" />
   }
   @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
   @if (success()) { <p class="success" role="status">{{ success() }}</p> }
@@ -25,9 +25,19 @@
   }
   @if (mode === 'new' || (mode === 'edit' && selected)) {
   <form #mediaForm="ngForm" (ngSubmit)="save()" class="report-form">
-    <h3>{{ selected ? 'Bildangaben bearbeiten' : 'Bild hochladen' }}</h3>
+    <h3>{{ selected?.children?.length ? 'Gemeinsame Angaben der Fotogruppe bearbeiten' : selected ? 'Bildangaben bearbeiten' : 'Bild hochladen' }}</h3>
+    @if (selected?.children?.length) {
+      <p>Titel, Alternativtext, Beschreibung und Galerie gelten fuer alle {{ selected!.children.length + 1 }} Fotos.
+        Die Gruppe wird als ein Eintrag sortiert, veroeffentlicht, zurueckgenommen und geloescht.</p>
+      <div class="group-previews">
+        @for (photo of [selected!, ...selected!.children]; track photo.id) {
+          <img [src]="'/api/admin/media/' + photo.id + '/image'" [alt]="altText" width="120" loading="lazy"
+            (error)="error.set('Eine Bildvorschau konnte nicht geladen werden. Bitte Upload-Speicher pruefen.')">
+        }
+      </div>
+    }
     @if (selected?.status === 'PUBLISHED') {
-      <aside>Aenderungen an diesem Bild sind nach dem Speichern sofort oeffentlich.</aside>
+      <aside>Aenderungen an diesem Bild bzw. der ganzen Fotogruppe sind nach dem Speichern sofort oeffentlich.</aside>
     }
     @if (!selected) {
       <label for="media-file">Bilddatei</label>
@@ -36,7 +46,8 @@
     }
     <label for="media-category">Galerie</label>
     <select id="media-category" name="mediaCategory" [(ngModel)]="category" [disabled]="busy()">
-      <option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option><option value="TRAVEL">Reiseberichte</option>
+      <option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option>
+      @if (!selected?.children?.length) { <option value="TRAVEL">Reiseberichte</option> }
     </select>
     <label for="media-title">Bildtitel</label>
     <input id="media-title" name="mediaTitle" [(ngModel)]="title" required maxlength="200" [disabled]="busy()">
@@ -44,10 +55,18 @@
     <input id="media-alt" name="mediaAlt" [(ngModel)]="altText" required maxlength="500" [disabled]="busy()">
     <label for="media-description">Bildbeschreibung (optional)</label>
     <textarea id="media-description" name="mediaDescription" [(ngModel)]="description" maxlength="2000" [disabled]="busy()"></textarea>
+    <h3>Englische Uebersetzung (optional)</h3>
+    <p class="hint">Leere englische Angaben verwenden den deutschen Inhalt. Bei Fotogruppen gelten die Uebersetzungen fuer alle Fotos.</p>
+    <label for="media-title-en">Bildtitel (Englisch)</label>
+    <input id="media-title-en" name="mediaTitleEn" lang="en" [(ngModel)]="titleEn" maxlength="200" [disabled]="busy()">
+    <label for="media-alt-en">Alternativtext (Englisch)</label>
+    <input id="media-alt-en" name="mediaAltEn" lang="en" [(ngModel)]="altTextEn" maxlength="500" [disabled]="busy()">
+    <label for="media-description-en">Bildbeschreibung (Englisch)</label>
+    <textarea id="media-description-en" name="mediaDescriptionEn" lang="en" [(ngModel)]="descriptionEn" maxlength="2000" [disabled]="busy()"></textarea>
     <p class="hint">Fuer Sammy und Meine Kreationen die separate Sortieransicht verwenden, statt Zahlen einzeln anzupassen.</p>
     <label for="media-order">Sortierwert (erweitert; kleinere Zahl zuerst, bei Gleichstand neueste Bilder zuerst)</label>
     <input id="media-order" name="mediaOrder" type="number" [(ngModel)]="sortOrder" min="0" max="1000000" required [disabled]="busy()">
-    <button type="submit" [disabled]="busy() || !!queue?.running() || mediaForm.invalid || (!selected && !file)">{{ busy() ? 'Bitte warten ...' : 'Bild speichern' }}</button>
+    <button type="submit" [disabled]="busy() || !!queue?.running() || mediaForm.invalid || (!selected && !file)">{{ busy() ? 'Bitte warten ...' : selected?.children?.length ? 'Fotogruppe speichern' : 'Bild speichern' }}</button>
     @if (dirty()) { <p class="hint">Nicht gespeicherte Bildangaben.</p> }
     <a [routerLink]="basePath">Abbrechen und zurueck zur Bildliste</a>
   </form>
@@ -70,16 +89,17 @@
         <img [src]="'/api/admin/media/' + asset.id + '/image'" [alt]="asset.altText" loading="lazy" (error)="error.set('Eine Bildvorschau konnte nicht geladen werden. Bitte Backend und Upload-Speicher pruefen.')">
         <div>
           <h3>{{ asset.title }}</h3>
+          @if (asset.children.length) { <p>Multi-Fotogruppe · {{ asset.children.length + 1 }} Fotos (gemeinsame Angaben und Aktionen)</p> }
           <p>{{ asset.category === 'DRAWING' ? 'Meine Kreationen' : asset.category === 'SAMMY' ? 'Sammy' : 'Reiseberichte (Veroeffentlichung ueber Bericht)' }} · {{ asset.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }} · Sortierung {{ asset.sortOrder }}</p>
           <div class="actions">
-            <button type="button" (click)="edit(asset)" [disabled]="busy()">Bildangaben bearbeiten</button>
+            <button type="button" (click)="edit(asset)" [disabled]="busy()">{{ asset.children.length ? 'Fotogruppe bearbeiten' : 'Bildangaben bearbeiten' }}</button>
             @if (asset.status === 'DRAFT') {
               @if (asset.category !== 'TRAVEL') {
-                <button type="button" (click)="action(asset, 'publish')" [disabled]="busy() || dirty()">Bild veroeffentlichen</button>
+                <button type="button" (click)="action(asset, 'publish')" [disabled]="busy() || dirty()">{{ asset.children.length ? 'Fotogruppe veroeffentlichen' : 'Bild veroeffentlichen' }}</button>
               }
-              <button type="button" class="danger" (click)="action(asset, 'delete')" [disabled]="busy() || dirty()">Bild loeschen</button>
+              <button type="button" class="danger" (click)="action(asset, 'delete')" [disabled]="busy() || dirty()">{{ asset.children.length ? 'Fotogruppe loeschen' : 'Bild loeschen' }}</button>
             } @else {
-              <button type="button" class="secondary" (click)="action(asset, 'unpublish')" [disabled]="busy() || dirty()">Bild zuruecknehmen</button>
+              <button type="button" class="secondary" (click)="action(asset, 'unpublish')" [disabled]="busy() || dirty()">{{ asset.children.length ? 'Fotogruppe zuruecknehmen' : 'Bild zuruecknehmen' }}</button>
             }
           </div>
         </div>
@@ -88,7 +108,7 @@
   </ul>
   <div class="actions">
     <button type="button" (click)="reload(page - 1)" [disabled]="busy() || page <= 1">Vorherige Bildseite</button>
-    <span>Seite {{ list().page }} · {{ list().total }} Bilder</span>
+    <span>Seite {{ list().page }} · {{ list().total }} Bilder / Fotogruppen</span>
     <button type="button" (click)="reload(page + 1)" [disabled]="busy() || page * 20 >= list().total">Naechste Bildseite</button>
   </div>
   }

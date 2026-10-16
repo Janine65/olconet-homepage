@@ -8,5 +8,5 @@ export function configureHttp(app: NestExpressApplication) {
     if (request.url.startsWith('/api/')) response.setHeader('Cache-Control', 'no-store');
     next();
   });
-  app.useBodyParser('json', { limit: '128kb' });
+  app.useBodyParser('json', { limit: '256kb' });
 }

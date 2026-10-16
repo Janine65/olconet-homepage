@@ -32,6 +32,16 @@ export class TravelController {
     return this.reports.status(reportId(id), reportVersion(record(body, ['version'])['version']), false);
   }
 
+  @Post(':id/pages/:pageId/publish')
+  publishPage(@Param('id') id: string, @Param('pageId') pageId: string, @Body() body: unknown) {
+    return this.reports.status(reportId(id), reportVersion(record(body, ['version'])['version']), true, reportId(pageId));
+  }
+
+  @Post(':id/pages/:pageId/unpublish')
+  unpublishPage(@Param('id') id: string, @Param('pageId') pageId: string, @Body() body: unknown) {
+    return this.reports.status(reportId(id), reportVersion(record(body, ['version'])['version']), false, reportId(pageId));
+  }
+
   @Post(':id/delete')
   delete(@Param('id') id: string, @Body() body: unknown) {
     return this.reports.delete(reportId(id), reportVersion(record(body, ['version'])['version']));

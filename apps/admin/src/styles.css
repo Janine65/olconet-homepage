@@ -50,7 +50,7 @@ select { padding: .8rem; border: 1px solid #8a9e93; border-radius: .4rem; font: 
 .upload-list label { display: block; margin: .5rem 0; }
 .report-image-preview { width: 100px; height: 80px; object-fit: contain; display: block; }
 .tiptap figure { margin: 1rem 0; }
-.tiptap figure img { max-width: 100%; max-height: 400px; object-fit: contain; }
+.tiptap figure img { max-width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
 .tiptap figcaption { min-height: 1.5em; color: #53665f; }
 .media-order { margin: 1.5rem 0; }
 .media-sort-list { list-style: none; padding: 0; }

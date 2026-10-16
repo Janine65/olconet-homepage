@@ -2,24 +2,38 @@ import { Component, EventEmitter, HostListener, OnInit, Output, ViewChild, injec
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from './auth.service';
-import { RichEditorComponent } from './rich-editor.component';
+import { InlineImageSize, RichEditorComponent } from './rich-editor.component';
 import { UploadedAsset, UploadQueueComponent } from './upload-queue.component';
 
 interface ReportSummary {
   id: string; title: string; slug: string; excerpt: string; destination: string | null;
   travelStart: string | null; travelEnd: string | null; status: 'DRAFT' | 'PUBLISHED';
   version: number; publishedAt: string | null;
+  titleEn: string; excerptEn: string; destinationEn: string;
 }
-interface Report extends ReportSummary { contentHtml: string; contentMarkdown: string;
+interface ReportPage {
+  id: string; title: string; contentHtml: string; status: 'DRAFT' | 'PUBLISHED';
+  titleEn: string; contentHtmlEn: string;
+  images: { assetId: string; inGallery: boolean; caption: string | null; captionEn: string; asset: UploadedAsset }[];
+}
+interface Report extends ReportSummary { contentHtml: string; contentMarkdown: string; pages: ReportPage[];
   images: { assetId: string; inGallery: boolean; caption: string | null; asset: UploadedAsset }[]; }
 interface ReportList { items: ReportSummary[]; total: number; page: number; pageSize: number; }
-interface ReportForm {
-  title: string; slug: string; excerpt: string; contentHtml: string; destination: string;
-  travelStart: string; travelEnd: string;
-  galleryImages: { assetId: string; caption: string }[];
+interface PageForm {
+  id: string; title: string; contentHtml: string;
+  titleEn: string; contentHtmlEn: string;
+  galleryImages: { assetId: string; caption: string; captionEn: string }[];
 }
+interface ReportForm {
+  title: string; slug: string; excerpt: string; destination: string;
+  travelStart: string; travelEnd: string;
+  titleEn: string; excerptEn: string; destinationEn: string;
+  pages: PageForm[];
+}
+const emptyPage = (): PageForm => ({ id: crypto.randomUUID(), title: '', contentHtml: '', titleEn: '', contentHtmlEn: '', galleryImages: [] });
 const emptyForm = (): ReportForm => ({
-  title: '', slug: '', excerpt: '', contentHtml: '', destination: '', travelStart: '', travelEnd: '', galleryImages: [],
+  title: '', slug: '', excerpt: '', destination: '', travelStart: '', travelEnd: '', pages: [emptyPage()],
+  titleEn: '', excerptEn: '', destinationEn: '',
 });
 
 @Component({
@@ -30,11 +44,13 @@ const emptyForm = (): ReportForm => ({
 })
 export class ReportsComponent implements OnInit {
   @ViewChild('richEditor') editor?: RichEditorComponent;
+  @ViewChild('englishEditor') englishEditor?: RichEditorComponent;
   @ViewChild(UploadQueueComponent) queue?: UploadQueueComponent;
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly savedOnEntry = this.router.currentNavigation()?.extras.state?.['saved'] === true;
+  private readonly pageOnEntry: unknown = this.router.currentNavigation()?.extras.state?.['pageId'];
   readonly mode = this.route.snapshot.data['mode'] as 'new' | 'edit' | undefined;
   @Output() changed = new EventEmitter<void>();
   readonly list = signal<ReportList | null>(null);
@@ -46,6 +62,8 @@ export class ReportsComponent implements OnInit {
   readonly error = signal('');
   readonly message = signal('');
   form = emptyForm();
+  pageIndex = 0;
+  get activePage() { return this.form.pages[this.pageIndex]!; }
   readonly availableImages = signal<UploadedAsset[]>([]);
   readonly imageTotal = signal(0);
   readonly imageLoading = signal(false);
@@ -53,6 +71,8 @@ export class ReportsComponent implements OnInit {
   imagePage = 1;
   selectedImageId = '';
   imageCaption = '';
+  imageCaptionEn = '';
+  imageSize: InlineImageSize = 250;
   page = 1;
   private slugEdited = false;
 
@@ -60,6 +80,10 @@ export class ReportsComponent implements OnInit {
     if (this.mode === 'new') this.create();
     else if (this.mode === 'edit') {
       await this.open(this.route.snapshot.paramMap.get('id')!);
+      if (typeof this.pageOnEntry === 'string') {
+        const index = this.form.pages.findIndex(page => page.id === this.pageOnEntry);
+        if (index >= 0) this.pageIndex = index;
+      }
       if (this.current() && this.savedOnEntry) this.message.set('Entwurf gespeichert.');
     }
     else await this.load();
@@ -101,10 +125,11 @@ export class ReportsComponent implements OnInit {
     if (!this.canLeave()) return;
     this.queue?.clear();
     this.form = emptyForm();
+    this.pageIndex = 0;
     this.slugEdited = false;
     this.current.set(null);
     this.recentImages.set([]);
-    this.selectedImageId = ''; this.imageCaption = '';
+    this.selectedImageId = ''; this.imageCaption = ''; this.imageCaptionEn = '';
     this.editing.set(true);
     this.dirty.set(false);
     this.error.set('');
@@ -121,7 +146,7 @@ export class ReportsComponent implements OnInit {
       const report = await this.auth.request<Report>(`/api/admin/reports/${id}`);
       this.queue?.clear();
       this.recentImages.set([]);
-      this.selectedImageId = ''; this.imageCaption = '';
+      this.selectedImageId = ''; this.imageCaption = ''; this.imageCaptionEn = '';
       this.accept(report);
       await this.loadImages(1);
     } catch (error) { this.showError(error); }
@@ -150,7 +175,7 @@ export class ReportsComponent implements OnInit {
     finally { this.busy.set(false); }
     const saved = this.current();
     if (!current && saved && !this.queue?.pending()) {
-      await this.router.navigate(['/reiseberichte', saved.id], { replaceUrl: true, state: { saved: true } });
+      await this.router.navigate(['/reiseberichte', saved.id], { replaceUrl: true, state: { saved: true, pageId: this.activePage.id } });
     }
   }
 
@@ -158,7 +183,7 @@ export class ReportsComponent implements OnInit {
     const current = this.current();
     if (!current || this.busy() || this.dirty() || this.queue?.running()) return;
     if (!window.confirm(publish ? 'Diesen Bericht auf der Homepage und im RSS-Feed veroeffentlichen?' :
-      'Veroeffentlichung zuruecknehmen? Der Bericht verschwindet von der Homepage und aus dem RSS-Feed.')) return;
+      'Alle Seiten zuruecknehmen? Der ganze Bericht verschwindet von der Homepage und aus dem RSS-Feed.')) return;
     this.busy.set(true);
     this.error.set('');
     this.message.set('');
@@ -170,6 +195,64 @@ export class ReportsComponent implements OnInit {
       this.changed.emit();
     } catch (error) { this.showError(error); }
     finally { this.busy.set(false); }
+  }
+
+  currentPage(id = this.activePage.id) { return this.current()?.pages.find(page => page.id === id); }
+
+  async changePageStatus(publish: boolean) {
+    const report = this.current();
+    const page = this.currentPage();
+    if (!report || !page || this.busy() || this.dirty() || this.queue?.running()) return;
+    const name = page.title || `Seite ${this.pageIndex + 1}`;
+    if (!confirm(publish ? `"${name}" veroeffentlichen? Die erste veroeffentlichte Seite macht den Bericht auf der Homepage sichtbar.` :
+      `"${name}" zuruecknehmen? Ohne weitere veroeffentlichte Seiten verschwindet auch der Bericht von der Homepage.`)) return;
+    this.busy.set(true); this.error.set(''); this.message.set('');
+    try {
+      this.accept(await this.auth.request<Report>(
+        `/api/admin/reports/${report.id}/pages/${page.id}/${publish ? 'publish' : 'unpublish'}`, { version: report.version },
+      ));
+      this.message.set(publish ? 'Seite veroeffentlicht.' : 'Seite zurueckgenommen.');
+      this.changed.emit();
+    } catch (error) { this.showError(error); }
+    finally { this.busy.set(false); }
+  }
+
+  private canChangePage() {
+    if (this.busy() || this.queue?.running()) {
+      this.error.set('Bitte die laufende Anfrage oder den aktuellen Upload abwarten.');
+      return false;
+    }
+    if (this.queue && !this.queue.canLeave()) return false;
+    this.queue?.clear();
+    this.selectedImageId = ''; this.imageCaption = ''; this.imageCaptionEn = '';
+    return true;
+  }
+  selectPage(index: number) {
+    if (index === this.pageIndex || !this.canChangePage()) return;
+    this.pageIndex = index;
+  }
+  addPage() {
+    if (this.form.pages.length >= 100) { this.error.set('Maximal 100 Seiten pro Bericht.'); return; }
+    if (!this.canChangePage()) return;
+    this.form.pages.push(emptyPage());
+    this.pageIndex = this.form.pages.length - 1;
+    this.touch();
+  }
+  movePage(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= this.form.pages.length || this.busy() || this.queue?.running()) return;
+    const activeId = this.activePage.id;
+    [this.form.pages[index], this.form.pages[target]] = [this.form.pages[target]!, this.form.pages[index]!];
+    this.pageIndex = this.form.pages.findIndex(page => page.id === activeId);
+    this.touch();
+  }
+  removePage() {
+    if (this.form.pages.length <= 1 || this.busy() || this.queue?.running()) return;
+    if (!confirm('Diese Seite aus dem Bericht entfernen? Beim Speichern verschwindet auch eine bereits veroeffentlichte Seite. Die Bilddateien bleiben erhalten.')) return;
+    if (!this.canChangePage()) return;
+    this.form.pages.splice(this.pageIndex, 1);
+    this.pageIndex = Math.min(this.pageIndex, this.form.pages.length - 1);
+    this.touch();
   }
 
   async delete() {
@@ -193,14 +276,20 @@ export class ReportsComponent implements OnInit {
   }
 
   private accept(report: Report) {
+    const activeId = this.activePage.id;
     this.current.set(report);
     this.slugEdited = true;
     this.form = {
-      title: report.title, slug: report.slug, excerpt: report.excerpt, contentHtml: report.contentHtml,
+      title: report.title, slug: report.slug, excerpt: report.excerpt,
+      titleEn: report.titleEn, excerptEn: report.excerptEn, destinationEn: report.destinationEn,
       destination: report.destination ?? '',
       travelStart: report.travelStart?.slice(0, 10) ?? '', travelEnd: report.travelEnd?.slice(0, 10) ?? '',
-      galleryImages: report.images.filter(image => image.inGallery).map(image => ({ assetId: image.assetId, caption: image.caption ?? '' })),
+      pages: report.pages.map(page => ({
+        id: page.id, title: page.title, contentHtml: page.contentHtml, titleEn: page.titleEn, contentHtmlEn: page.contentHtmlEn,
+        galleryImages: page.images.filter(image => image.inGallery).map(image => ({ assetId: image.assetId, caption: image.caption ?? '', captionEn: image.captionEn })),
+      })),
     };
+    this.pageIndex = Math.max(0, this.form.pages.findIndex(page => page.id === activeId));
     this.editing.set(true);
     this.dirty.set(false);
   }
@@ -225,28 +314,29 @@ export class ReportsComponent implements OnInit {
     this.changed.emit();
   }
   private selectedImage() { return this.reportImages().find(image => image.id === this.selectedImageId); }
-  insertImage() {
+  insertImage(english = false) {
     const image = this.selectedImage();
-    if (!image || !this.editor) { this.error.set('Bitte ein Reisebild auswaehlen und den Editor laden.'); return; }
-    this.editor.insertImage(image, this.imageCaption);
+    const editor = english ? this.englishEditor : this.editor;
+    if (!image || !editor) { this.error.set('Bitte ein Reisebild auswaehlen und den Editor laden.'); return; }
+    editor.insertImage(image, english ? this.imageCaptionEn : this.imageCaption, this.imageSize);
   }
   addSelectedGallery() {
     const image = this.selectedImage();
     if (!image) { this.error.set('Bitte ein Reisebild auswaehlen.'); return; }
-    this.addGallery(image, this.imageCaption);
+    this.addGallery(image, this.imageCaption, this.imageCaptionEn);
   }
-  private addGallery(image: UploadedAsset, caption = '') {
-    if (this.form.galleryImages.some(item => item.assetId === image.id)) return;
-    this.form.galleryImages.push({ assetId: image.id, caption }); this.touch();
+  private addGallery(image: UploadedAsset, caption = '', captionEn = '') {
+    if (this.activePage.galleryImages.some(item => item.assetId === image.id)) return;
+    this.activePage.galleryImages.push({ assetId: image.id, caption, captionEn }); this.touch();
   }
   imageName(id: string) { return this.reportImages().find(image => image.id === id)?.title ?? id; }
   moveImage(index: number, direction: number) {
     const target = index + direction;
-    if (target < 0 || target >= this.form.galleryImages.length) return;
-    const images = this.form.galleryImages;
+    if (target < 0 || target >= this.activePage.galleryImages.length) return;
+    const images = this.activePage.galleryImages;
     [images[index], images[target]] = [images[target]!, images[index]!]; this.touch();
   }
-  removeGallery(index: number) { this.form.galleryImages.splice(index, 1); this.touch(); }
+  removeGallery(index: number) { this.activePage.galleryImages.splice(index, 1); this.touch(); }
 
   private showError(error: unknown) {
     this.error.set(error instanceof Error ? error.message : 'Reisebericht-Anfrage fehlgeschlagen.');

@@ -34,10 +34,10 @@ export const adminRoutes: Routes = [
     return [
       { ...base, path, title: `${label} | olconet Verwaltung`, data: { ...data, mode: 'list' } },
       { ...base, path: `${path}/neu`, title: `Bild hochladen | olconet Verwaltung`, data: { ...data, mode: 'new' } },
-      { ...base, path: `${path}/upload`, title: `Mehrfachupload | olconet Verwaltung`, data: { ...data, mode: 'upload' } },
+      { ...base, path: `${path}/upload`, title: `${category ? 'Multi-Fotogruppe' : 'Mehrere Einzelbilder'} | olconet Verwaltung`, data: { ...data, mode: 'upload' } },
       ...(category ? [{ ...base, path: `${path}/sortieren`, title: `${label} sortieren | olconet Verwaltung`,
         data: { ...data, mode: 'sort' } }] : []),
-      { ...base, path: `${path}/bild/:id`, title: `Bild bearbeiten | olconet Verwaltung`, data: { ...data, mode: 'edit' } },
+      { ...base, path: `${path}/bild/:id`, title: `Bild oder Fotogruppe bearbeiten | olconet Verwaltung`, data: { ...data, mode: 'edit' } },
     ];
   }),
   { path: '**', title: 'Seite nicht gefunden | olconet Verwaltung',

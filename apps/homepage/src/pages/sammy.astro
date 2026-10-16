@@ -1,9 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Gallery from '../components/Gallery.astro';
+import { translations, type Language } from '../i18n';
+interface Props { lang?: Language; }
+const { lang = 'de' } = Astro.props;
+const t = translations(lang);
 ---
-<Layout title="Sammy">
-  <h1>Mit Sammy unterwegs</h1>
-  <p>Fotos und Erinnerungen mit Sammy.</p>
-  <Gallery category="SAMMY" />
+<Layout title="Sammy" lang={lang}>
+  <h1>{t('Mit Sammy unterwegs', 'Adventures with Sammy')}</h1>
+  <p>{t('Fotos und Erinnerungen mit Sammy.', 'Photos and memories with Sammy.')}</p>
+  <Gallery category="SAMMY" lang={lang} />
 </Layout>

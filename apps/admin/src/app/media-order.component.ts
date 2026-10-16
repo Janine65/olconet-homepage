@@ -3,7 +3,7 @@ import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './auth.service';
 
-interface OrderItem { id: string; title: string; altText: string; status: 'DRAFT' | 'PUBLISHED'; position: number; }
+interface OrderItem { id: string; title: string; altText: string; status: 'DRAFT' | 'PUBLISHED'; position: number; _count: { children: number }; }
 interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize: number; token: string; category: string; }
 
 @Component({
@@ -11,7 +11,7 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
   template: `
     <section class="media-order">
       <h3>Reihenfolge: {{ category === 'SAMMY' ? 'Sammy' : 'Meine Kreationen' }}</h3>
-      <p>Bilder am Griff ziehen oder mit Vor/Zurueck verschieben. Fuer Spruenge ueber Seiten hinweg
+      <p>Bilder oder ganze Fotogruppen am Griff ziehen oder mit Vor/Zurueck verschieben. Fuer Spruenge ueber Seiten hinweg
         eine Zielposition eingeben. Jede Verschiebung wird sofort gespeichert, auch fuer die Homepage.
         Entwuerfe werden mitsortiert, bleiben aber privat.</p>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
@@ -30,6 +30,7 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
                 (error)="error.set('Eine Bildvorschau fehlt. Bitte Upload-Speicher pruefen.')">
               <div>
                 <strong>{{ item.position }}. {{ item.title }}</strong>
+                @if (item._count.children) { <p>Fotogruppe · {{ item._count.children + 1 }} Fotos</p> }
                 <p>{{ item.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }}</p>
                 <div class="sort-actions">
                   <button type="button" (click)="move(item, item.position - 1)" [disabled]="busy() || disabled || item.position <= 1"
@@ -49,7 +50,7 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
         </ol>
         <div class="actions">
           <button type="button" (click)="reload(page - 1)" [disabled]="busy() || disabled || page <= 1">Vorherige Sortierseite</button>
-          <span>Seite {{ data.page }} · {{ data.total }} Bilder insgesamt</span>
+          <span>Seite {{ data.page }} · {{ data.total }} Bilder / Fotogruppen insgesamt</span>
           <button type="button" (click)="reload(page + 1)" [disabled]="busy() || disabled || page * 20 >= data.total">Naechste Sortierseite</button>
         </div>
       }

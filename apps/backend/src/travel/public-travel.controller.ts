@@ -5,6 +5,7 @@ import { TravelService } from './travel.service';
 import { pageNumber, reportId } from './travel.input';
 import { MediaService } from '../media/media.service';
 import { readSiteUrl, rss } from './rss';
+import { language } from '../language';
 
 @Public()
 @Controller('api/public/reports')
@@ -14,15 +15,16 @@ export class PublicTravelController {
     @Inject(MediaService) private readonly media: MediaService) {}
 
   @Get()
-  list(@Query('page') page: unknown) { return this.reports.list(pageNumber(page), true); }
+  list(@Query('page') page: unknown, @Query('lang') lang: unknown) { return this.reports.list(pageNumber(page), true, language(lang)); }
 
   @Get('rss')
-  async feed(@Res() response: Response) {
-    response.type('application/rss+xml').send(rss(await this.reports.feedItems(), this.site));
+  async feed(@Res() response: Response, @Query('lang') value: unknown) {
+    const lang = language(value);
+    response.type('application/rss+xml').send(rss(await this.reports.feedItems(lang), this.site, lang));
   }
 
   @Get(':slug')
-  get(@Param('slug') slug: string) { return this.reports.published(slug); }
+  get(@Param('slug') slug: string, @Query('lang') lang: unknown) { return this.reports.published(slug, language(lang)); }
 
   @Get(':slug/images/:id')
   async image(@Param('slug') slug: string, @Param('id') id: string) {

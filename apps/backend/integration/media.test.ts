@@ -140,4 +140,83 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     assert.equal((await (await get('/api/public/media?category=DRAWING&page=2')).json()).items.length, 1);
     await prisma.mediaAsset.deleteMany({ where: { originalName: 'fixture' } });
   });
+  await t.test('Multi-Fotogruppen sind eine gemeinsame Verwaltungs-, Sortier- und Veroeffentlichungseinheit', async () => {
+    const groupData = { ...data, category: 'SAMMY', sortOrder: 0 };
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const response = await upload(source, groupData);
+      assert.equal(response.status, 201);
+      ids.push((await response.json()).id);
+    }
+    const [parent, child] = ids;
+    const grouping = { ids };
+    const unauthenticated = await fetch(`${base}/api/admin/media/group`, { method: 'POST', headers, body: JSON.stringify(grouping) });
+    assert.equal(unauthenticated.status, 401);
+    assert.equal((await post('/api/admin/media/group', grouping)).status, 201);
+    assert.equal((await post('/api/admin/media/group', grouping)).status, 201);
+    let detail = await (await get(`/api/admin/media/${parent}`, true)).json();
+    assert.deepEqual(detail.children.map((item: { id: string }) => item.id), ids.slice(1));
+    assert.equal(detail.revision, 1);
+    assert.equal((await (await get('/api/admin/media?category=SAMMY', true)).json()).total, 1);
+    assert.equal((await (await get('/api/admin/overview', true)).json()).sammyPhotos, 1);
+    assert.equal((await (await get('/api/public/media?category=SAMMY')).json()).total, 0);
+    for (const photo of ids) assert.equal((await get(`/api/public/media/${photo}/image`)).status, 404);
+    assert.equal((await get(`/api/admin/media/${child}`, true)).status, 404);
+    for (const action of ['publish', 'unpublish', 'delete']) {
+      assert.equal((await post(`/api/admin/media/${child}/${action}`, { revision: 1 })).status, 409);
+    }
+    assert.equal((await post(`/api/admin/media/${child}/save`, { ...groupData, revision: 1 })).status, 409);
+    assert.equal((await post(`/api/admin/media/${parent}/save`, { ...groupData, category: 'TRAVEL', revision: 1 })).status, 400);
+    assert.equal((await post(`/api/admin/media/${parent}/publish`, { revision: 1 })).status, 201);
+    for (const photo of ids) assert.equal((await get(`/api/public/media/${photo}/image`)).status, 200);
+    await db.mediaAsset.createMany({ data: Array.from({ length: 20 }, (_, i) => ({
+      ...groupData, storageKey: `group-pagination-${i}`, originalName: 'group-fixture', mimeType: 'image/webp',
+      byteSize: 1, sortOrder: i + 10, status: 'PUBLISHED',
+    })) });
+    const firstPage = await (await get('/api/public/media?category=SAMMY')).json();
+    assert.equal(firstPage.total, 21);
+    assert.equal(firstPage.items.length, 20);
+    assert.equal(firstPage.items[0].id, parent);
+    assert.equal(firstPage.items[0].children.length, 2);
+    assert.equal((await (await get('/api/public/media?category=SAMMY&page=2')).json()).items.length, 1);
+    const order = await (await get('/api/admin/media/order?category=SAMMY', true)).json();
+    assert.equal(order.total, 21);
+    assert.equal(order.items[0]._count.children, 2);
+    assert.equal((await post('/api/admin/media/order/move', { category: 'SAMMY', assetId: child, position: 21, token: order.token })).status, 404);
+    assert.equal((await post('/api/admin/media/order/move', { category: 'SAMMY', assetId: parent, position: 21, token: order.token })).status, 201);
+    const secondPage = await (await get('/api/public/media?category=SAMMY&page=2')).json();
+    assert.equal(secondPage.items[0].id, parent);
+    assert.deepEqual(secondPage.items[0].children.map((item: { id: string }) => item.id), ids.slice(1));
+    detail = await (await get(`/api/admin/media/${parent}`, true)).json();
+    const changes = { ...groupData, category: 'DRAWING', title: 'Gemeinsamer Titel', altText: 'Gemeinsamer Alternativtext', revision: detail.revision };
+    assert.equal((await post(`/api/admin/media/${parent}/save`, changes)).status, 201);
+    assert.equal((await post(`/api/admin/media/${parent}/save`, changes)).status, 409);
+    const photos = await db.mediaAsset.findMany({ where: { id: { in: ids } } });
+    assert.ok(photos.every(photo => photo.title === changes.title && photo.altText === changes.altText && photo.category === 'DRAWING'));
+    const publicGroup = await (await get('/api/public/media?category=DRAWING')).json();
+    assert.equal(publicGroup.total, 1);
+    assert.equal(publicGroup.items[0].title, changes.title);
+    assert.equal(publicGroup.items[0].children.length, 2);
+    detail = await (await get(`/api/admin/media/${parent}`, true)).json();
+    assert.equal((await post(`/api/admin/media/${parent}/delete`, { revision: detail.revision })).status, 409);
+    assert.equal((await post(`/api/admin/media/${parent}/unpublish`, { revision: detail.revision })).status, 201);
+    for (const photo of ids) assert.equal((await get(`/api/public/media/${photo}/image`)).status, 404);
+    assert.equal((await post(`/api/admin/media/${parent}/delete`, { revision: detail.revision + 1 })).status, 201);
+    assert.equal(await db.mediaAsset.count({ where: { id: { in: ids } } }), 0);
+    assert.deepEqual(await readdir(directory), []);
+    await db.mediaAsset.deleteMany({ where: { originalName: 'group-fixture' } });
+  });
+  await t.test('Gruppierung lehnt Reisebilder, gemischte Kategorien und abweichende gemeinsame Angaben ab', async () => {
+    const first = (await (await upload(source)).json()).id;
+    const second = (await (await upload(source, { ...data, category: 'TRAVEL' })).json()).id;
+    assert.equal((await post('/api/admin/media/group', { ids: [first, second] })).status, 409);
+    assert.equal((await post('/api/admin/media/group', { ids: [first, first] })).status, 400);
+    assert.equal((await post('/api/admin/media/group', { ids: [first] })).status, 400);
+    const other = (await (await upload(source, { ...data, altText: 'Abweichender Alternativtext' })).json()).id;
+    assert.equal((await post('/api/admin/media/group', { ids: [first, other] })).status, 409);
+    for (const photo of [first, second, other]) {
+      assert.equal((await post(`/api/admin/media/${photo}/delete`, { revision: 0 })).status, 201);
+    }
+    assert.deepEqual(await readdir(directory), []);
+  });
 });

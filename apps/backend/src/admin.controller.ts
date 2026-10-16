@@ -9,8 +9,8 @@ export class AdminController {
   async overview() {
     const [reports, drawings, sammyPhotos] = await this.prisma.$transaction([
       this.prisma.travelReport.count(),
-      this.prisma.mediaAsset.count({ where: { category: 'DRAWING' } }),
-      this.prisma.mediaAsset.count({ where: { category: 'SAMMY' } }),
+      this.prisma.mediaAsset.count({ where: { category: 'DRAWING', parentId: null } }),
+      this.prisma.mediaAsset.count({ where: { category: 'SAMMY', parentId: null } }),
     ]);
     return { reports, drawings, sammyPhotos };
   }

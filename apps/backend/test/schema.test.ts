@@ -5,13 +5,20 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 
-test('SQL-Migrationen entsprechen Prisma-Diffs fuer Grundmodell und Editor-Erweiterung', (t) => {
+test('Historische SQL-Migrationen entsprechen den zugehoerigen Prisma-Modellen', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'olconet-schema-test-'));
   t.after(() => rmSync(directory, { recursive: true }));
   const baseline = join(directory, 'baseline.prisma');
   const schema = readFileSync('prisma/schema.prisma', 'utf8');
+  const reportImagesSchema = join(directory, 'report-images.prisma');
+  const historical = schema
+    .replace(/^.*\b(?:titleEn|excerptEn|destinationEn|altTextEn|descriptionEn|contentHtmlEn|captionEn)\s+String.*\n/gm, '')
+    .replace(/\nmodel ReportPage \{[\s\S]*?\n\}\n/, '\n')
+    .replace(/^.*(?:pages\s+ReportPage|parentId\s+String|parent\s+MediaAsset|children\s+MediaAsset|@@index\(\[parentId\]\)|pageId\s+String|page\s+ReportPage|@@index\(\[reportId\]\)).*\n/gm, '')
+    .replace('@@id([pageId, assetId])', '@@id([reportId, assetId])');
+  writeFileSync(reportImagesSchema, historical);
   const mediaSchema = join(directory, 'media.prisma');
-  writeFileSync(mediaSchema, schema.replace(/^.*(?:uploadKey|uploadFingerprint|inGallery|caption\s+String\?).*\n/gm, ''));
+  writeFileSync(mediaSchema, historical.replace(/^.*(?:uploadKey|uploadFingerprint|inGallery|caption\s+String\?).*\n/gm, ''));
   const editorSchema = join(directory, 'editor.prisma');
   writeFileSync(editorSchema, readFileSync(mediaSchema, 'utf8').replace(/^.*revision.*\n/m, ''));
   writeFileSync(baseline, readFileSync(editorSchema, 'utf8')
@@ -35,7 +42,7 @@ test('SQL-Migrationen entsprechen Prisma-Diffs fuer Grundmodell und Editor-Erwei
     statements(readFileSync('prisma/migrations/20261011110000_travel_editor/migration.sql', 'utf8')));
   assert.deepEqual(statements(diff(['--from-schema', editorSchema], mediaSchema)),
     statements(readFileSync('prisma/migrations/20261011120000_media_upload/migration.sql', 'utf8')));
-  assert.deepEqual(statements(diff(['--from-schema', mediaSchema], 'prisma/schema.prisma')),
+  assert.deepEqual(statements(diff(['--from-schema', mediaSchema], reportImagesSchema)),
     statements(readFileSync('prisma/migrations/20261011130000_report_images/migration.sql', 'utf8')));
 });
 

@@ -73,3 +73,46 @@ test('Berichtsbilder erlauben nur validierte IDs, nie fremde URLs oder vom Clien
   assert.throws(() => reportInput({ ...input, galleryImages: Array.from({ length: 101 }, () => ({ assetId: id, caption: '' })) }));
   assert.throws(() => reportInput({ ...input, galleryImages: [{ assetId: id, caption: 'x'.repeat(501) }] }));
 });
+
+test('Berichtsseiten haben eigene Inhalte und Bilder, aber keine vom Client gesetzten Veroeffentlichungszustaende', () => {
+  const { contentHtml: _content, ...metadata } = input;
+  const id = '11111111-1111-4111-8111-111111111111';
+  const page = { id, title: 'Anreise', contentHtml: '<p>Unterwegs</p>', galleryImages: [] };
+  const body = { ...metadata, pages: [page] };
+  const parsed = reportInput(body);
+  assert.equal(parsed.legacy, false);
+  assert.equal(parsed.pages[0]!.title, 'Anreise');
+  assert.equal(parsed.pages[0]!.id, id);
+  for (const pages of [
+    [], [page, page], Array.from({ length: 101 }, () => ({ contentHtml: '' })),
+    [{ ...page, status: 'PUBLISHED' }], [{ ...page, publishedAt: '2026-01-01' }],
+    [{ ...page, id: 'invalid' }], [{ ...page, title: 'x'.repeat(201) }],
+    [{ ...page, contentHtml: 'x'.repeat(60000) }, { contentHtml: 'y'.repeat(40001) }],
+  ]) assert.throws(() => reportInput({ ...metadata, pages }));
+  assert.throws(() => reportInput({ ...body, contentHtml: '' }));
+  const photoPage = { ...page, contentHtml: '', galleryImages: [{ assetId: id, caption: '' }] };
+  const repeatedPhoto = reportInput({ ...metadata, pages: [photoPage, { ...photoPage, id: undefined }] });
+  assert.equal(repeatedPhoto.imageIds.length, 1);
+  assert.notEqual(repeatedPhoto.pages[0]!.id, repeatedPhoto.pages[1]!.id);
+  assert.doesNotThrow(() => requirePublishable({ ...repeatedPhoto.pages[0]!, excerpt: 'Fototag' }));
+  assert.equal(reportInput({ ...metadata, pages: Array.from({ length: 100 }, () => ({ contentHtml: '' })) }).pages.length, 100);
+});
+
+test('Textbilder speichern genau drei Groessen und erzeugen nur vertrauenswuerdige Abmessungen', () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  for (const size of ['100', '250', '500']) {
+    const html = `<figure><img data-asset-id="${id}" data-image-size="${size}" width="9999" height="1" style="width:9999px"></figure>`;
+    const clean = cleanContent(html);
+    assert.match(clean, new RegExp(`data-image-size="${size}"`));
+    assert.doesNotMatch(clean, /9999|height=|width=|style=/);
+    const published = publicContent(clean, 'reise', [{ id, altText: 'Reisefoto' }]);
+    assert.match(published, new RegExp(`width="${size}" height="${size}"`));
+    assert.match(published, new RegExp(`/api/public/reports/reise/images/${id}`));
+    assert.doesNotMatch(published, /data-image-size|9999|style=/);
+  }
+  assert.match(publicContent(`<figure><img data-asset-id="${id}"></figure>`, 'reise', [{ id, altText: 'Alt' }]),
+    /width="250" height="250"/);
+  for (const size of ['', '0', '101', '100.0', '250px', '1000', '-100', '100 500', 'NaN']) {
+    assert.throws(() => cleanContent(`<figure><img data-asset-id="${id}" data-image-size="${size}"></figure>`));
+  }
+});

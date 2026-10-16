@@ -1,4 +1,5 @@
 import { ConfigurationError } from '../config';
+import { Language } from '../language';
 
 export function readSiteUrl(env: NodeJS.ProcessEnv) {
   const value = env['SITE_URL'] ?? (env['NODE_ENV'] === 'production' ? '' : 'http://localhost:18431');
@@ -16,14 +17,16 @@ export function xml(value: string) {
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
-export function rss(items: { id: string; slug: string; title: string; excerpt: string; publishedAt: Date | null }[], site: string) {
+export function rss(items: { id: string; slug: string; title: string; excerpt: string; publishedAt: Date | null }[], site: string, lang: Language = 'de') {
+  const prefix = lang === 'en' ? '/en' : '';
+  const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
-<title>olconet Reiseberichte</title><link>${xml(site + '/reisen/')}</link>
-<description>Janines Reiseberichte</description><language>de</language>
-<atom:link href="${xml(site + '/api/public/reports/rss')}" rel="self" type="application/rss+xml"/>
+<title>${lang === 'en' ? 'olconet Travel reports' : 'olconet Reiseberichte'}</title><link>${xml(site + prefix + '/reisen/')}</link>
+<description>${lang === 'en' ? "Janine's travel reports" : 'Janines Reiseberichte'}</description><language>${lang}</language>
+<atom:link href="${xml(site + feed)}" rel="self" type="application/rss+xml"/>
 ${items.map((item) => `<item><title>${xml(item.title)}</title>
-<link>${xml(site + '/reisen/bericht/?slug=' + encodeURIComponent(item.slug))}</link>
+<link>${xml(site + prefix + '/reisen/bericht/?slug=' + encodeURIComponent(item.slug))}</link>
 <guid isPermaLink="false">${xml('urn:olconet:travel:' + item.id)}</guid>
 <description>${xml(item.excerpt)}</description>
 ${item.publishedAt ? `<pubDate>${item.publishedAt.toUTCString()}</pubDate>` : ''}</item>`).join('\n')}

@@ -1,30 +1,46 @@
 ---
-interface Props { title: string; }
-const { title } = Astro.props;
+import PhotoViewer from '../components/PhotoViewer.astro';
+import { pagePath, translations, type Language } from '../i18n';
+interface Props { title: string; lang?: Language; }
+const { title, lang = 'de' } = Astro.props;
+const t = translations(lang);
+const path = Astro.url.pathname.replace(/^\/en(?=\/|$)/, '') || '/';
+const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
 ---
 <!doctype html>
-<html lang="de">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Janines Reiseberichte, kreative Arbeiten und Fotos von Sammy." />
+    <meta name="description" content={t('Janines Reiseberichte, kreative Arbeiten und Fotos von Sammy.', "Janine's travel reports, creative work and photos of Sammy.")} />
     <title>{title} | olconet</title>
-    <link rel="alternate" type="application/rss+xml" title="olconet Reiseberichte" href="/api/public/reports/rss" />
+    <link rel="alternate" type="application/rss+xml" title={t('olconet Reiseberichte', 'olconet Travel reports')} href={feed} />
+    <link rel="alternate" hreflang="de" href={pagePath(path, 'de')} />
+    <link rel="alternate" hreflang="en" href={pagePath(path, 'en')} />
   </head>
   <body>
     <header>
-      <a class="brand" href="/">olconet</a>
-      <nav aria-label="Hauptnavigation">
-        <a href="/reisen/">Reisen</a>
-        <a href="/kreationen/">Meine Kreationen</a>
-        <a href="/sammy/">Sammy</a>
-        <a href="/kontakt/">Kontakt</a>
+      <a class="brand" href={pagePath('/', lang)}>olconet</a>
+      <nav aria-label={t('Hauptnavigation', 'Main navigation')}>
+        <a href={pagePath('/reisen/', lang)}>{t('Reisen', 'Travel')}</a>
+        <a href={pagePath('/kreationen/', lang)}>{t('Meine Kreationen', 'My creations')}</a>
+        <a href={pagePath('/sammy/', lang)}>Sammy</a>
+        <a href={pagePath('/kontakt/', lang)}>{t('Kontakt', 'Contact')}</a>
+      </nav>
+      <nav aria-label={t('Sprache', 'Language')}>
+        <a data-language-switch href={pagePath(path, 'de')} lang="de" hreflang="de" aria-current={lang === 'de' ? 'page' : undefined}>Deutsch</a>
+        <a data-language-switch href={pagePath(path, 'en')} lang="en" hreflang="en" aria-current={lang === 'en' ? 'page' : undefined}>English</a>
       </nav>
     </header>
     <main><slot /></main>
-    <footer>olconet &middot; Janines persoenliche Homepage</footer>
+    <footer>olconet &middot; {t('Janines persoenliche Homepage', "Janine's personal homepage")}</footer>
+    <PhotoViewer lang={lang} />
   </body>
 </html>
+<script>
+  import { syncLanguageLinks } from '../i18n';
+  syncLanguageLinks();
+</script>
 <style is:global>
   :root { font-family: system-ui, sans-serif; color: #243b36; background: #faf8f3; }
   * { box-sizing: border-box; }
@@ -34,6 +50,7 @@ const { title } = Astro.props;
   a { color: #245e50; text-underline-offset: .2em; }
   .brand { font-size: 1.8rem; font-weight: 750; text-decoration: none; }
   nav { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  nav a[aria-current="page"] { font-weight: 700; text-decoration-thickness: .15em; }
   main { min-height: 70vh; padding-top: 4rem; }
   h1 { font-size: clamp(2.3rem, 6vw, 4.5rem); line-height: 1.1; max-width: 850px; }
   p { line-height: 1.7; max-width: 700px; }
@@ -44,10 +61,13 @@ const { title } = Astro.props;
   button { font: inherit; padding: .6rem 1rem; border: 1px solid #245e50; border-radius: .4rem; color: #245e50; background: white; cursor: pointer; }
   button:disabled { opacity: .5; cursor: default; }
   .pagination { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 2rem; }
+  .pagination[hidden] { display: none; }
   .report-content { max-width: 800px; line-height: 1.7; overflow-wrap: anywhere; }
   .report-content blockquote { border-left: 3px solid #8a9e93; padding-left: 1rem; margin-left: 0; }
   .report-content figure { margin: 1.5rem 0; }
   .report-content img, .report-gallery img { max-width: 100%; max-height: 700px; object-fit: contain; }
+  .report-content img { height: auto; aspect-ratio: 1; }
+  .report-content .photo-zoom { width: fit-content; max-width: 100%; }
   .report-content figcaption, .report-gallery figcaption { color: #53665f; line-height: 1.6; overflow-wrap: anywhere; }
   .report-gallery:not([hidden]) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 1rem; margin-top: 2rem; }
   .report-gallery figure { margin: 0; padding: 1rem; background: white; border: 1px solid #d4ddd4; }
