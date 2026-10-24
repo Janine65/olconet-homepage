@@ -251,8 +251,8 @@ oder dort mehrere Dateien mit der Warteschlange hochladen. Erfolgreiche
 Uploads werden zur **noch ungespeicherten** Galerie der ausgewaehlten Seite hinzugefuegt.
 Zum Anlegen einer Bildzuordnung den Bericht danach speichern.
 Beim Mehrfachupload direkt im Reisebericht zeigt jeder Eintrag eine kleine
-Fotovorschau. Der Titel ist anfangs leer statt mit dem Dateinamen vorbelegt;
-Titel und Alternativtext vor dem Start je Foto ausfuellen. Die Vorschau bleibt
+Fotovorschau. Die optionale Bildunterschrift ist anfangs leer statt mit dem
+Dateinamen vorbelegt; der Alternativtext wird automatisch daraus uebernommen. Die Vorschau bleibt
 auch nach erfolgreichem Upload sichtbar.
 
 - **Im Text:** Im Editor die gewuenschte Einfuegeposition anklicken, ein
@@ -439,7 +439,8 @@ danach wird die angeforderte Unterseite geoeffnet. Nicht vorhandene
 Unterseiten zeigen eine sichtbare Fehlermeldung.
 
 In **Bildbibliothek**, **Sammy** oder **Meine Kreationen** mit **Neues Bild** eine Datei auswaehlen und
-Kategorie (**Meine Kreationen**, **Sammy** oder **Reiseberichte**), Titel und Alternativtext angeben.
+Kategorie (**Meine Kreationen**, **Sammy** oder **Reiseberichte**) waehlen
+und bei Bedarf eine Bildunterschrift angeben.
 Meine Kreationen umfasst Zeichnungen, Toepferarbeiten, Naehprojekte und andere
 selbstgemachte Werke. Die Galerie liegt unter `/kreationen/`, die Verwaltung
 unter `/#/kreationen`. Alte Links unter `/zeichnungen/` und `/#/zeichnungen`
@@ -514,7 +515,8 @@ Kategorie umfasst hoechstens 1.000.001 Bilder (bestehender Sortierwertbereich).
 
 **Multi-Fotogruppe hochladen** im Bereich **Sammy** oder **Meine Kreationen**
 oeffnet einen gemeinsamen Upload fuer 2 bis 100 Fotos derselben Kategorie.
-Titel und Alternativtext werden **einmal fuer die ganze Gruppe** eingegeben.
+Die optionale Bildunterschrift wird **einmal fuer die ganze Gruppe**
+eingegeben und automatisch als gemeinsamer Alternativtext uebernommen.
 Nach den einzelnen Uploads wird die Gruppe gespeichert. Die Homepage zeigt
 alle Fotos zusammen in einem umrahmten Galerieeintrag mit einem gemeinsamen
 Titel; jedes Foto verwendet den gemeinsamen Alternativtext.
@@ -588,8 +590,17 @@ Die neue Datenbankmigration vor dem Backend-Start mit `pnpm db:deploy` anwenden.
 
 Unter **Mehrere Einzelbilder hochladen** in der **Bildbibliothek** mehrere Dateien auf einmal auswaehlen.
 Die Schaltflaeche in der Bildliste oeffnet dafuer eine separate Upload-Seite.
-Je Datei den vorgeschlagenen Titel pruefen und einen echten Alternativtext
-ergaenzen. In der allgemeinen Bildverwaltung wird die Kategorie je Datei
+Je Datei bei Bedarf eine Bildunterschrift ergaenzen (maximal 200 Zeichen).
+Sie wird unter dem Foto angezeigt und automatisch als Alternativtext fuer
+Screenreader uebernommen, auch fuer die optionale englische Uebersetzung.
+Ohne Bildunterschrift bleiben beide Angaben leer; Dateinamen werden nicht
+als Bildunterschrift veroeffentlicht. Das gilt auch fuer Einzeluploads und
+gemeinsame Angaben neuer Fotogruppen. Beim Bearbeiten bleiben bestehende
+individuelle Alternativtexte erhalten, bis die Bildunterschrift geaendert wird.
+Reisebild-Uploads uebernehmen die Bildunterschrift in die Seitengalerie;
+beim Einfuegen in den Berichtstext dient sie als Vorgabe fuer die editierbare
+Bildunterschrift. Eine eigene Galerie-Bildunterschrift hat Vorrang.
+In der allgemeinen Bildverwaltung wird die Kategorie je Datei
 gewaehlt; im Reisebericht ist sie fest `TRAVEL`. **Warteschlange starten /
 fortsetzen** uebertraegt Dateien nacheinander, jeweils als einzelne Anfrage.
 Es gelten weiterhin 10 MiB pro Datei, nicht fuer die gesamte Auswahl.
@@ -648,8 +659,13 @@ fuer ein anderes Bild einen neuen Entwurf hochladen.
 
 Metadaten bestehen aus `category` (`DRAWING`, `SAMMY` oder `TRAVEL`), `title`,
 `altText`, `description` (String, leer erlaubt) und `sortOrder`.
+`title` (maximal 200 Zeichen) und `altText` (maximal 500 Zeichen) duerfen
+leer sein oder fehlen. Ein leerer/fehlender Alternativtext wird aus `title`
+uebernommen; explizite individuelle Alternativtexte bleiben erhalten.
 Optional: `titleEn` (maximal 200 Zeichen), `altTextEn` (500) und
-`descriptionEn` (2000); leere Strings aktivieren den deutschen Ersatz.
+`descriptionEn` (2000). Bei uebergebenem `titleEn` wird ein leerer/fehlender
+`altTextEn` daraus uebernommen; sonst aktivieren leere englische Texte den
+deutschen Ersatz.
 Nur beim Upload ist optional `uploadKey` (UUID) fuer sichere Wiederholungen erlaubt.
 Status- und Loeschbefehle erwarten `{ "revision": 0 }` mit der aktuellen
 Revision. Alle schreibenden APIs verlangen exakte `ADMIN_ORIGIN` und

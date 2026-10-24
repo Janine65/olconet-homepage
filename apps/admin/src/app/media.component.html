@@ -49,18 +49,19 @@
       <option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option>
       @if (!selected?.children?.length) { <option value="TRAVEL">Reiseberichte</option> }
     </select>
-    <label for="media-title">Bildtitel</label>
-    <input id="media-title" name="mediaTitle" [(ngModel)]="title" required maxlength="200" [disabled]="metadataLocked()">
-    <label for="media-alt">Alternativtext (beschreibt das Bild fuer Screenreader)</label>
-    <input id="media-alt" name="mediaAlt" [(ngModel)]="altText" required maxlength="500" [disabled]="metadataLocked()">
+    <label for="media-title">Bildunterschrift (optional)</label>
+    <input id="media-title" name="mediaTitle" [(ngModel)]="title" (ngModelChange)="altText = $event" maxlength="200" [disabled]="metadataLocked()">
+    <p class="hint">Wird unter dem Foto angezeigt und automatisch als Alternativtext fuer Screenreader uebernommen.</p>
+    <label for="media-alt">Alternativtext (automatisch aus der Bildunterschrift)</label>
+    <input id="media-alt" name="mediaAlt" [ngModel]="altText" readonly [disabled]="metadataLocked()">
     <label for="media-description">Bildbeschreibung (optional)</label>
     <textarea id="media-description" name="mediaDescription" [(ngModel)]="description" maxlength="2000" [disabled]="metadataLocked()"></textarea>
     <h3>Englische Uebersetzung (optional)</h3>
     <p class="hint">Leere englische Angaben verwenden den deutschen Inhalt. Bei Fotogruppen gelten die Uebersetzungen fuer alle Fotos.</p>
-    <label for="media-title-en">Bildtitel (Englisch)</label>
-    <input id="media-title-en" name="mediaTitleEn" lang="en" [(ngModel)]="titleEn" maxlength="200" [disabled]="metadataLocked()">
-    <label for="media-alt-en">Alternativtext (Englisch)</label>
-    <input id="media-alt-en" name="mediaAltEn" lang="en" [(ngModel)]="altTextEn" maxlength="500" [disabled]="metadataLocked()">
+    <label for="media-title-en">Bildunterschrift (Englisch)</label>
+    <input id="media-title-en" name="mediaTitleEn" lang="en" [(ngModel)]="titleEn" (ngModelChange)="altTextEn = $event" maxlength="200" [disabled]="metadataLocked()">
+    <label for="media-alt-en">Alternativtext (Englisch, automatisch aus der Bildunterschrift)</label>
+    <input id="media-alt-en" name="mediaAltEn" lang="en" [ngModel]="altTextEn" readonly [disabled]="metadataLocked()">
     <label for="media-description-en">Bildbeschreibung (Englisch)</label>
     <textarea id="media-description-en" name="mediaDescriptionEn" lang="en" [(ngModel)]="descriptionEn" maxlength="2000" [disabled]="metadataLocked()"></textarea>
     <p class="hint">Fuer Sammy und Meine Kreationen die separate Sortieransicht verwenden, statt Zahlen einzeln anzupassen.</p>
@@ -96,7 +97,7 @@
       <li>
         <img [src]="'/api/admin/media/' + asset.id + '/image'" [alt]="asset.altText" loading="lazy" (error)="error.set('Eine Bildvorschau konnte nicht geladen werden. Bitte Backend und Upload-Speicher pruefen.')">
         <div>
-          <h3>{{ asset.title }}</h3>
+          <h3>{{ asset.title || 'Bild ohne Bildunterschrift' }}</h3>
           @if (asset.children.length) { <p>Multi-Fotogruppe · {{ asset.children.length + 1 }} Fotos (gemeinsame Angaben und Aktionen)</p> }
           <p>{{ asset.category === 'DRAWING' ? 'Meine Kreationen' : asset.category === 'SAMMY' ? 'Sammy' : 'Reiseberichte (Veroeffentlichung ueber Bericht)' }} · {{ asset.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }} · Sortierung {{ asset.sortOrder }}</p>
           <div class="actions">

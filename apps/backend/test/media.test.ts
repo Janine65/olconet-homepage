@@ -14,18 +14,41 @@ test('Fotogruppen verlangen 2 bis 100 eindeutige Bild-IDs und keine fremden Feld
   ]) assert.throws(() => photoGroupInput(body));
 });
 
-test('Bilddaten verlangen Kategorie, Titel, Alternativtext und begrenzte Sortierung', () => {
+test('Bilddaten verlangen Kategorie und begrenzte Sortierung, Bildtexte sind optional', () => {
   const input = { category: 'SAMMY', title: ' Sammy ', altText: ' Hund am See ', description: '', sortOrder: 0 };
   assert.equal(mediaInput(input).data.title, 'Sammy');
   assert.equal(mediaInput(input).data.description, null);
   for (const invalid of [
-    { ...input, category: 'INVALID' }, { ...input, altText: ' ' }, { ...input, title: 'x'.repeat(201) },
+    { ...input, category: 'INVALID' }, { ...input, title: 'x'.repeat(201) },
+    { ...input, title: null }, { ...input, altText: 1 }, { ...input, altText: 'x'.repeat(501) },
     { ...input, sortOrder: 0.5 }, { ...input, sortOrder: -1 }, { ...input, sortOrder: 1000001 },
     { ...input, status: 'PUBLISHED' },
   ]) assert.throws(() => mediaInput(invalid));
   assert.throws(() => mediaInput(input, true));
   assert.equal(mediaInput({ ...input, revision: 2 }, true).revision, 2);
   assert.throws(() => galleryCategory(['SAMMY']));
+});
+
+test('Alternativtexte werden aus optionalen Bildunterschriften uebernommen, individuelle Texte bleiben erhalten', () => {
+  const input = { category: 'TRAVEL', description: '', sortOrder: 0 };
+  const empty = mediaInput(input).data;
+  assert.equal(empty.title, '');
+  assert.equal(empty.altText, '');
+  assert.equal(mediaInput({ ...input, title: ' ', altText: ' ' }).data.altText, '');
+  const caption = mediaInput({ ...input, title: ' Am See ', titleEn: ' At the lake ', altTextEn: '' }).data;
+  assert.equal(caption.title, 'Am See');
+  assert.equal(caption.altText, 'Am See');
+  assert.equal(caption.titleEn, 'At the lake');
+  assert.equal(caption.altTextEn, 'At the lake');
+  assert.equal(mediaInput({ ...input, title: 'Sammy', altText: ' Hund am See ' }).data.altText, 'Hund am See');
+  assert.equal(mediaInput({ ...input, titleEn: 'Sammy', altTextEn: ' Dog by the lake ' }).data.altTextEn, 'Dog by the lake');
+  const updated = mediaInput({ ...input, title: '', altText: '', revision: 1 }, true);
+  assert.equal(updated.data.altText, '');
+  assert.equal(updated.data.titleEn, undefined);
+  assert.equal(updated.data.altTextEn, undefined);
+  for (const category of ['DRAWING', 'SAMMY']) {
+    assert.equal(mediaInput({ ...input, category, title: '', altText: '' }).data.title, '');
+  }
 });
 
 test('Nachtraegliche Gruppenfotos verlangen mindestens eine eindeutige Bild-ID und eine aktuelle Revision', () => {

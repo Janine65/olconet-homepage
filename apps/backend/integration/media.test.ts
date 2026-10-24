@@ -61,7 +61,7 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
   });
   await t.test('Validierung lehnt defekte und zu grosse Dateien sowie unerlaubte Metadaten ohne gespeicherte Dateien ab', async () => {
     assert.equal((await upload(Buffer.from('not an image'))).status, 400);
-    assert.equal((await upload(source, { ...data, altText: '' })).status, 400);
+    assert.equal((await upload(source, { ...data, altText: 'x'.repeat(501) })).status, 400);
     assert.equal((await upload(source, { ...data, status: 'PUBLISHED' })).status, 400);
     assert.equal((await upload(Buffer.alloc(MAX_UPLOAD_BYTES + 1))).status, 413);
     assert.deepEqual(await readdir(directory), []);
@@ -127,6 +127,26 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     assert.equal((await post(`/api/admin/media/${id}/delete`, { revision: 4 })).status, 201);
     assert.deepEqual(await readdir(directory), []);
     assert.equal((await get(`/api/admin/media/${id}/image`, true)).status, 404);
+  });
+  await t.test('Optionale Bildunterschriften und automatische Alternativtexte bleiben nach Upload und Speichern erhalten', async () => {
+    for (const title of ['', 'Am See']) {
+      const response = await upload(source, { ...data, title, altText: '', titleEn: title ? 'At the lake' : '', altTextEn: '' });
+      assert.equal(response.status, 201);
+      const asset = await response.json();
+      const detail = await (await get(`/api/admin/media/${asset.id}`, true)).json();
+      assert.equal(detail.title, title);
+      assert.equal(detail.altText, title);
+      assert.equal(detail.altTextEn, title ? 'At the lake' : '');
+      assert.equal((await post(`/api/admin/media/${asset.id}/save`, {
+        ...data, title: '', altText: '', titleEn: '', altTextEn: '', revision: 0,
+      })).status, 201);
+      const cleared = await (await get(`/api/admin/media/${asset.id}`, true)).json();
+      assert.equal(cleared.title, '');
+      assert.equal(cleared.altText, '');
+      assert.equal(cleared.altTextEn, '');
+      assert.equal((await post(`/api/admin/media/${asset.id}/delete`, { revision: 1 })).status, 201);
+    }
+    assert.deepEqual(await readdir(directory), []);
   });
   await t.test('Galerie-Pagination und Sortierung werden eingehalten', async () => {
     const prisma = app.get(PrismaService);

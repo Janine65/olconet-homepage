@@ -318,18 +318,18 @@ export class ReportsComponent implements OnInit {
     const image = this.selectedImage();
     const editor = english ? this.englishEditor : this.editor;
     if (!image || !editor) { this.error.set('Bitte ein Reisebild auswaehlen und den Editor laden.'); return; }
-    editor.insertImage(image, english ? this.imageCaptionEn : this.imageCaption, this.imageSize);
+    editor.insertImage(image, english ? this.imageCaptionEn || image.titleEn || image.title : this.imageCaption || image.title, this.imageSize);
   }
   addSelectedGallery() {
     const image = this.selectedImage();
     if (!image) { this.error.set('Bitte ein Reisebild auswaehlen.'); return; }
-    this.addGallery(image, this.imageCaption, this.imageCaptionEn);
+    this.addGallery(image, this.imageCaption || image.title, this.imageCaptionEn || image.titleEn || '');
   }
-  private addGallery(image: UploadedAsset, caption = '', captionEn = '') {
+  private addGallery(image: UploadedAsset, caption = image.title, captionEn = image.titleEn ?? '') {
     if (this.activePage.galleryImages.some(item => item.assetId === image.id)) return;
     this.activePage.galleryImages.push({ assetId: image.id, caption, captionEn }); this.touch();
   }
-  imageName(id: string) { return this.reportImages().find(image => image.id === id)?.title ?? id; }
+  imageName(id: string) { return this.reportImages().find(image => image.id === id)?.title || `Bild ${id}`; }
   moveImage(index: number, direction: number) {
     const target = index + direction;
     if (target < 0 || target >= this.activePage.galleryImages.length) return;

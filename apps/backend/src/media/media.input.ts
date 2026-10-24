@@ -47,12 +47,16 @@ export function mediaInput(body: unknown, updating = false) {
   if (typeof sortOrder !== 'number' || !Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 1000000) {
     throw new BadRequestException('Sortierung muss eine ganze Zahl zwischen 0 und 1000000 sein.');
   }
+  const title = input['title'] === undefined ? '' : text('title', 200, false);
+  const altText = input['altText'] === undefined ? '' : text('altText', 500, false);
+  const titleEn = input['titleEn'] === undefined ? undefined : text('titleEn', 200, false);
+  const altTextEn = input['altTextEn'] === undefined ? undefined : text('altTextEn', 500, false);
   return {
     data: {
-      category: mediaCategory(input['category']), title: text('title', 200, true),
-      altText: text('altText', 500, true), description: text('description', 2000, false) || null, sortOrder,
-      ...(input['titleEn'] !== undefined ? { titleEn: text('titleEn', 200, false) } : {}),
-      ...(input['altTextEn'] !== undefined ? { altTextEn: text('altTextEn', 500, false) } : {}),
+      category: mediaCategory(input['category']), title,
+      altText: altText || title, description: text('description', 2000, false) || null, sortOrder,
+      ...(titleEn !== undefined ? { titleEn } : {}),
+      ...(altTextEn !== undefined || titleEn !== undefined ? { altTextEn: altTextEn || titleEn || '' } : {}),
       ...(input['descriptionEn'] !== undefined ? { descriptionEn: text('descriptionEn', 2000, false) } : {}),
     },
     revision: updating ? reportVersion(input['revision']) : 0,

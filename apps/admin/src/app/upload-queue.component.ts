@@ -20,17 +20,16 @@ interface QueueEntry {
   template: `
     <div class="upload-queue">
       <h3>{{ appendTo ? 'Fotos zur Fotogruppe hinzufuegen' : group ? 'Multi-Fotogruppe hochladen' : 'Mehrere Bilder hochladen' }}</h3>
-      <p>Bis zu {{ capacity() }} Dateien auswaehlen. {{ appendTo ? 'Neue Fotos werden hinten an die bestehende Gruppe angehaengt.' : group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamem Titel und Alternativtext.' : 'Titel und Alternativtext je Bild ergaenzen.' }} Dann Warteschlange starten.
+      <p>Bis zu {{ capacity() }} Dateien auswaehlen. {{ appendTo ? 'Neue Fotos werden hinten an die bestehende Gruppe angehaengt.' : group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamer optionaler Bildunterschrift.' : 'Bei Bedarf eine Bildunterschrift je Bild ergaenzen.' }} Dann Warteschlange starten.
         Jede Datei wird einzeln geprueft (maximal 10 MiB). Erfolgreiche Uploads bleiben bei einem Fehler erhalten.</p>
+      <p class="hint">Die Bildunterschrift wird unter dem Foto angezeigt und automatisch als Alternativtext fuer Screenreader verwendet. Ohne Bildunterschrift bleiben beide Angaben leer.</p>
       @if (group) {
         @if (appendTo) {
         <p class="hint">Titel, Alternativtext und Beschreibungen einschliesslich englischer Uebersetzungen werden von der gespeicherten Gruppe uebernommen.
           {{ appendTo.status === 'PUBLISHED' ? 'Die neuen Fotos werden nach dem Hinzufuegen sofort oeffentlich sichtbar.' : 'Die neuen Fotos bleiben mit der Gruppe privat.' }}</p>
         } @else {
-        <label>Gemeinsamer Titel <input [(ngModel)]="groupTitle" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
-        <label>Gemeinsamer Alternativtext <input [(ngModel)]="groupAltText" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="locked() || disabled"></label>
-        <label>Gemeinsamer Titel (Englisch, optional) <input lang="en" [(ngModel)]="groupTitleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
-        <label>Gemeinsamer Alternativtext (Englisch, optional) <input lang="en" [(ngModel)]="groupAltTextEn" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="locked() || disabled"></label>
+        <label>Gemeinsame Bildunterschrift (optional) <input [(ngModel)]="groupTitle" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
+        <label>Gemeinsame Bildunterschrift (Englisch, optional) <input lang="en" [(ngModel)]="groupTitleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
         <p class="hint">Die Gruppe wird nach allen erfolgreichen Uploads gespeichert. Bei Fehlern bitte erneut versuchen.
           Noch nicht gruppierte Uploads bleiben als private Einzelentwuerfe in der Bildliste erhalten.</p>
         }
@@ -51,10 +50,8 @@ interface QueueEntry {
               @if (entry.previewError) { <p class="error" role="alert">Die Vorschau fuer {{ entry.name }} konnte nicht geladen werden.</p> }
             }
             @if (!group) {
-            <label>Titel <input [(ngModel)]="entry.title" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="entry.attempted || running() || disabled"></label>
-            <label>Alternativtext <input [(ngModel)]="entry.altText" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="entry.attempted || running() || disabled"></label>
-            <label>Titel (Englisch, optional) <input lang="en" [(ngModel)]="entry.titleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="entry.attempted || running() || disabled"></label>
-            <label>Alternativtext (Englisch, optional) <input lang="en" [(ngModel)]="entry.altTextEn" [ngModelOptions]="{standalone:true}" maxlength="500" [disabled]="entry.attempted || running() || disabled"></label>
+            <label>Bildunterschrift (optional) <input [(ngModel)]="entry.title" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="entry.attempted || running() || disabled"></label>
+            <label>Bildunterschrift (Englisch, optional) <input lang="en" [(ngModel)]="entry.titleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="entry.attempted || running() || disabled"></label>
             @if (!category) {
               <label>Upload-Galerie <select [(ngModel)]="entry.category" [ngModelOptions]="{standalone:true}" [disabled]="entry.attempted || running() || disabled">
                 <option value="DRAWING">Meine Kreationen</option><option value="SAMMY">Sammy</option><option value="TRAVEL">Reiseberichte</option>
@@ -98,9 +95,7 @@ export class UploadQueueComponent implements OnDestroy {
   readonly groupSaved = signal(false);
   readonly groupingStarted = signal(false);
   groupTitle = '';
-  groupAltText = '';
   groupTitleEn = '';
-  groupAltTextEn = '';
   private paused = false;
   ngOnDestroy() { this.paused = true; this.entries().forEach(entry => this.releasePreview(entry)); }
   waiting() { return this.entries().some(entry => entry.state === 'waiting'); }
@@ -127,7 +122,7 @@ export class UploadQueueComponent implements OnDestroy {
       return;
     }
     this.entries.update(entries => [...entries, ...files.map(file => ({
-      key: crypto.randomUUID(), file, name: file.name, title: this.category === 'TRAVEL' ? '' : file.name.replace(/\.[^.]+$/, '').slice(0, 200),
+      key: crypto.randomUUID(), file, name: file.name, title: '',
       previewUrl: this.category === 'TRAVEL' ? URL.createObjectURL(file) : null, previewError: false,
       titleEn: '', altTextEn: '',
       altText: '', category: this.category ?? 'DRAWING', state: 'waiting' as const, progress: 0, error: '', attempted: false,
@@ -143,13 +138,13 @@ export class UploadQueueComponent implements OnDestroy {
     if (this.group && !this.groupSaved()) return;
     this.entries().filter(entry => entry.state === 'done').forEach(entry => this.releasePreview(entry));
     this.entries.update(entries => entries.filter(entry => entry.state !== 'done'));
-    if (this.group) { this.groupSaved.set(false); this.groupingStarted.set(false); this.groupTitle = ''; this.groupAltText = ''; this.groupTitleEn = ''; this.groupAltTextEn = ''; }
+    if (this.group) { this.groupSaved.set(false); this.groupingStarted.set(false); this.groupTitle = ''; this.groupTitleEn = ''; }
   }
   clear() {
     if (this.running()) return;
     this.entries().forEach(entry => this.releasePreview(entry));
-    this.entries.set([]); this.error.set(''); this.groupSaved.set(false); this.groupingStarted.set(false); this.groupTitle = ''; this.groupAltText = '';
-    this.groupTitleEn = ''; this.groupAltTextEn = '';
+    this.entries.set([]); this.error.set(''); this.groupSaved.set(false); this.groupingStarted.set(false); this.groupTitle = '';
+    this.groupTitleEn = '';
   }
   private releasePreview(entry: QueueEntry) {
     if (!entry.previewUrl) return;
@@ -166,11 +161,11 @@ export class UploadQueueComponent implements OnDestroy {
     if (this.running() || this.disabled) return;
     if (this.group) {
       if (this.groupSaved()) return;
-      const metadata = this.appendTo ?? { title: this.groupTitle, altText: this.groupAltText,
-        titleEn: this.groupTitleEn, altTextEn: this.groupAltTextEn, category: this.category };
+      const metadata = this.appendTo ?? { title: this.groupTitle.trim(), altText: this.groupTitle.trim(),
+        titleEn: this.groupTitleEn.trim(), altTextEn: this.groupTitleEn.trim(), category: this.category };
       if ((metadata.category !== 'SAMMY' && metadata.category !== 'DRAWING') || this.entries().length < (this.appendTo ? 1 : 2) ||
-        !metadata.title.trim() || metadata.title.trim().length > 200 ||
-        !metadata.altText.trim() || metadata.altText.trim().length > 500 ||
+        metadata.title.trim().length > 200 ||
+        metadata.altText.trim().length > 500 ||
         (metadata.titleEn ?? '').trim().length > 200 || (metadata.altTextEn ?? '').trim().length > 500) {
         this.error.set('Bitte Fotos und gueltige gemeinsame Angaben fuer Sammy oder Meine Kreationen angeben (neue Gruppe: mindestens 2 Fotos).');
         return;
@@ -194,9 +189,13 @@ export class UploadQueueComponent implements OnDestroy {
         if (entry.state !== 'waiting' || (only && entry !== only)) continue;
         if (!entry.file) continue;
         entry.error = '';
-        if (!entry.title.trim() || !entry.altText.trim() || entry.title.trim().length > 200 || entry.altText.trim().length > 500 ||
+        if (!this.appendTo && !entry.attempted) {
+          entry.title = entry.title.trim(); entry.altText = entry.title;
+          entry.titleEn = entry.titleEn.trim(); entry.altTextEn = entry.titleEn;
+        }
+        if (entry.title.trim().length > 200 || entry.altText.trim().length > 500 ||
           entry.titleEn.trim().length > 200 || entry.altTextEn.trim().length > 500) {
-          entry.state = 'failed'; entry.error = 'Titel (1-200 Zeichen) und Alternativtext (1-500 Zeichen) ergaenzen.';
+          entry.state = 'failed'; entry.error = 'Bildunterschriften duerfen maximal 200 Zeichen enthalten; Alternativtexte maximal 500.';
           this.refresh(); continue;
         }
         if (!entry.file.size || entry.file.size > 10 * 1024 * 1024) {

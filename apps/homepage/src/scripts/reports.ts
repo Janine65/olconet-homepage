@@ -131,9 +131,9 @@ export function loadReport() {
       img.src = `/api/public/reports/${encodeURIComponent(report.slug)}/images/${image.assetId}`;
       img.alt = image.asset.altText; img.loading = 'lazy';
       figure.append(img);
-      if (image.caption) {
+      if (image.caption || image.asset.title) {
         const caption = document.createElement('figcaption');
-        caption.textContent = image.caption; figure.append(caption);
+        caption.textContent = image.caption || image.asset.title; figure.append(caption);
       }
       gallery.append(figure);
     }

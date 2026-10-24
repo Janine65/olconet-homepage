@@ -25,18 +25,18 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
           @for (item of data.items; track item.id) {
             <li cdkDrag [cdkDragData]="item">
               <button type="button" class="drag-handle secondary" cdkDragHandle
-                [disabled]="busy() || disabled" [attr.aria-label]="'Bild ' + item.title + ' ziehen'">Ziehen</button>
+                [disabled]="busy() || disabled" [attr.aria-label]="'Bild ' + (item.title || item.position) + ' ziehen'">Ziehen</button>
               <img [src]="'/api/admin/media/' + item.id + '/image'" [alt]="item.altText" loading="lazy"
                 (error)="error.set('Eine Bildvorschau fehlt. Bitte Upload-Speicher pruefen.')">
               <div>
-                <strong>{{ item.position }}. {{ item.title }}</strong>
+                <strong>{{ item.position }}. {{ item.title || 'Bild ohne Bildunterschrift' }}</strong>
                 @if (item._count.children) { <p>Fotogruppe · {{ item._count.children + 1 }} Fotos</p> }
                 <p>{{ item.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }}</p>
                 <div class="sort-actions">
                   <button type="button" (click)="move(item, item.position - 1)" [disabled]="busy() || disabled || item.position <= 1"
-                    [attr.aria-label]="'Bild ' + item.title + ' nach vorne'">Vor</button>
+                    [attr.aria-label]="'Bild ' + (item.title || item.position) + ' nach vorne'">Vor</button>
                   <button type="button" (click)="move(item, item.position + 1)" [disabled]="busy() || disabled || item.position >= data.total"
-                    [attr.aria-label]="'Bild ' + item.title + ' nach hinten'">Zurueck</button>
+                    [attr.aria-label]="'Bild ' + (item.title || item.position) + ' nach hinten'">Zurueck</button>
                   <label [for]="'position-' + item.id">Zielposition</label>
                   <input [id]="'position-' + item.id" type="number" min="1" [max]="data.total"
                     [ngModel]="targets[item.id] ?? item.position" (ngModelChange)="targets[item.id] = $event"
@@ -108,7 +108,7 @@ export class MediaOrderComponent implements OnInit {
       saved = true;
       this.order.set(null);
       await this.load(Math.ceil(position / 20));
-      this.message.set(`"${item.title}" ist jetzt an Position ${position}.`);
+      this.message.set(`"${item.title || 'Bild ohne Bildunterschrift'}" ist jetzt an Position ${position}.`);
     } catch (error) {
       this.showError(error);
       if (saved) this.error.update(message => `Verschiebung gespeichert, aber die neue Reihenfolge konnte nicht geladen werden. ${message}`);

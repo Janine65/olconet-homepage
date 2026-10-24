@@ -32,7 +32,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-gallery]')) {
           figure.classList.add('gallery-group');
           photos.dataset['photoGroup'] = '';
           photos.setAttribute('role', 'group');
-          photos.setAttribute('aria-label', asset.title);
+          photos.setAttribute('aria-label', asset.title || t('Fotogruppe', 'Photo group'));
         }
         for (const photo of [asset, ...asset.children]) {
           const image = document.createElement('img');
@@ -47,15 +47,18 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-gallery]')) {
           photos.append(image);
         }
         const caption = document.createElement('figcaption');
-        const title = document.createElement('h2');
-        title.textContent = asset.title;
-        caption.append(title);
+        if (asset.title) {
+          const title = document.createElement('h2');
+          title.textContent = asset.title;
+          caption.append(title);
+        }
         if (asset.description) {
           const description = document.createElement('p');
           description.textContent = asset.description;
           caption.append(description);
         }
-        figure.append(photos, caption);
+        figure.append(photos);
+        if (caption.childElementCount) figure.append(caption);
         items.append(figure);
       }
       enablePhotoViewer(items);

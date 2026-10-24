@@ -83,7 +83,7 @@
         <label for="report-image">Vorhandenes Reisebild</label>
         <select id="report-image" name="reportImage" [(ngModel)]="selectedImageId" [disabled]="busy() || imageLoading()">
           <option value="">Bitte waehlen</option>
-          @for (image of reportImages(); track image.id) { <option [value]="image.id">{{ image.title }}</option> }
+          @for (image of reportImages(); track image.id) { <option [value]="image.id">{{ imageName(image.id) }}</option> }
         </select>
         <label for="report-image-caption">Bildunterschrift beim Einfuegen (optional)</label>
         <input id="report-image-caption" name="imageCaption" [(ngModel)]="imageCaption" maxlength="500" [disabled]="busy()">
