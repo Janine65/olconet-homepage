@@ -3,6 +3,7 @@ import { request as httpsRequest } from 'node:https';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { visitorHeaders, visitorProxyConfig } from './visitor-proxy.mjs';
 
 const contentTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -23,14 +24,15 @@ function isInside(root, path) {
   return child !== '..' && !child.startsWith(`..${sep}`) && !isAbsolute(child);
 }
 
-function proxyApi(request, response, target) {
+function proxyApi(request, response, target, visitors) {
   const excluded = new Set([
     'host', 'connection', 'keep-alive', 'transfer-encoding', 'upgrade', 'te',
     'trailer', 'proxy-authorization', 'proxy-authenticate',
     ...String(request.headers.connection ?? '').split(',').map((header) => header.trim().toLowerCase()),
   ]);
   const headers = Object.fromEntries(Object.entries(request.headers)
-    .filter(([name]) => !excluded.has(name) && !name.startsWith('x-forwarded-')));
+    .filter(([name]) => !excluded.has(name) && !name.startsWith('x-forwarded-') && !name.startsWith('x-olconet-visitor-')));
+  if (request.url === '/api/public/visitors') Object.assign(headers, visitorHeaders(request, visitors));
   const upstream = (target.protocol === 'https:' ? httpsRequest : httpRequest)({
     protocol: target.protocol,
     hostname: target.hostname,
@@ -60,7 +62,8 @@ function proxyApi(request, response, target) {
   request.pipe(upstream);
 }
 
-export async function createStaticServer(directory, apiUrl, apiPrefix = '/api/') {
+export async function createStaticServer(directory, apiUrl, apiPrefix = '/api/', env = process.env) {
+  const visitors = visitorProxyConfig(env);
   const root = await realpath(directory);
   const target = apiUrl ? new URL(apiUrl) : null;
   if (target && (!['http:', 'https:'].includes(target.protocol) || target.pathname !== '/' ||
@@ -73,7 +76,7 @@ export async function createStaticServer(directory, apiUrl, apiPrefix = '/api/')
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.setHeader('X-Frame-Options', 'DENY');
     if (target && request.url?.startsWith(apiPrefix)) {
-      proxyApi(request, response, target);
+      proxyApi(request, response, target, visitors);
       return;
     }
     const send = (status, body) => {

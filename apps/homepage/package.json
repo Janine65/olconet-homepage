@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host 127.0.0.1 --port 18431",
+    "dev": "astro dev --host localhost --port 18441",
     "build": "astro build",
     "check": "astro check"
   },

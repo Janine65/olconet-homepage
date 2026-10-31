@@ -5,7 +5,7 @@ export default defineConfig({
   redirects: { '/zeichnungen/': '/kreationen/' },
   vite: {
     server: {
-      proxy: { '/api/public/': { target: 'http://127.0.0.1:18433', changeOrigin: false } },
+      proxy: { '/api/public/': { target: 'http://127.0.0.1:18443', changeOrigin: false } },
     },
   },
 });

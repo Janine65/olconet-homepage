@@ -1,7 +1,7 @@
 import { ConfigurationError } from '../config';
 
 export function readAuthConfig(env: NodeJS.ProcessEnv) {
-  const origin = env['ADMIN_ORIGIN'] ?? (env['NODE_ENV'] === 'production' ? '' : 'http://localhost:18432');
+  const origin = env['ADMIN_ORIGIN'] ?? (env['NODE_ENV'] === 'production' ? '' : 'http://localhost:18442');
   let url: URL;
   try {
     url = new URL(origin);

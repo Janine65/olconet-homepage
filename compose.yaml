@@ -27,6 +27,9 @@ x-backend: &backend
     ADMIN_ORIGIN: ${ADMIN_ORIGIN:?ADMIN_ORIGIN muss gesetzt sein}
     SITE_URL: ${SITE_URL:?SITE_URL muss gesetzt sein}
     UPLOAD_DIR: /data/uploads
+    VISITOR_PROXY_SECRET: ${VISITOR_PROXY_SECRET:-}
+    VISITOR_TRUSTED_PROXIES: ${VISITOR_TRUSTED_PROXIES:-}
+    VISITOR_EXCLUDED_IPS: ${VISITOR_EXCLUDED_IPS:-}
 
 services:
   homepage:
@@ -41,6 +44,9 @@ services:
     environment:
       API_PROXY_URL: http://backend:8080
       API_PROXY_PREFIX: /api/public/
+      VISITOR_PROXY_SECRET: ${VISITOR_PROXY_SECRET:-}
+      VISITOR_TRUSTED_PROXIES: ${VISITOR_TRUSTED_PROXIES:-}
+      VISITOR_EXCLUDED_IPS: ${VISITOR_EXCLUDED_IPS:-}
     healthcheck: &health
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

@@ -13,7 +13,8 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
       <h3>Reihenfolge: {{ category === 'SAMMY' ? 'Sammy' : 'Meine Kreationen' }}</h3>
       <p>Bilder oder ganze Fotogruppen am Griff ziehen oder mit Vor/Zurueck verschieben. Fuer Spruenge ueber Seiten hinweg
         eine Zielposition eingeben. Jede Verschiebung wird sofort gespeichert, auch fuer die Homepage.
-        Entwuerfe werden mitsortiert, bleiben aber privat.</p>
+        Entwuerfe werden mitsortiert, bleiben aber privat. Neue Veroeffentlichungen werden auf der Homepage
+        automatisch vorne eingeordnet; die Reihenfolge der bisherigen Eintraege bleibt erhalten.</p>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       @if (message()) { <p class="success" role="status">{{ message() }}</p> }
       @if (busy()) { <p role="status">Reihenfolge wird geladen oder gespeichert ...</p> }

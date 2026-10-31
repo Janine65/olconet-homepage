@@ -12,7 +12,7 @@ export function readConfig(env: NodeJS.ProcessEnv) {
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.pathname.length < 2) {
     throw new ConfigurationError('DATABASE_URL muss auf eine benannte PostgreSQL-Datenbank zeigen.');
   }
-  const port = Number(env['PORT'] ?? '18433');
+  const port = Number(env['PORT'] ?? '18443');
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new ConfigurationError('PORT muss eine ganze Zahl zwischen 1 und 65535 sein.');
   }

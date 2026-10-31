@@ -172,10 +172,10 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
     assert.equal((await post(`/api/admin/media/${id}/publish`, { revision: asset.revision })).status, 201);
     const english = await (await get('/api/public/media?category=SAMMY&lang=en')).json();
     const group = english.items.find((item: { id: string }) => item.id === id);
-    assert.equal(group.title, 'Dog'); assert.equal(group.altText, 'Hund am See'); assert.equal(group.description, 'English');
+    assert.equal(group.title, 'Dog'); assert.equal(group.altText, 'Dog'); assert.equal(group.description, 'English');
     assert.equal(group.children.length, 1);
     const child = await db.mediaAsset.findUniqueOrThrow({ where: { id: assets[1] } });
-    assert.equal(child.titleEn, 'Dog'); assert.equal(child.altTextEn, ''); assert.equal(child.descriptionEn, 'English');
+    assert.equal(child.titleEn, 'Dog'); assert.equal(child.altTextEn, 'Dog'); assert.equal(child.descriptionEn, 'English');
     const german = await (await get('/api/public/media?category=SAMMY')).json();
     assert.equal(german.items.find((item: { id: string }) => item.id === id).title, 'Hund');
   });

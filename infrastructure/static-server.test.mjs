@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { createStaticServer } from './static-server.mjs';
+import { createHmac } from 'node:crypto';
 
 test('static server serves pages without exposing private files', async (t) => {
   const temp = await mkdtemp(join(tmpdir(), 'olconet-static-test-'));
@@ -65,6 +66,7 @@ test('admin proxy forwards login, cookies and origin only to its configured back
       'Content-Type': 'application/json',
       'Set-Cookie': ['olconet_session=new; Path=/api; HttpOnly; SameSite=Strict'],
     });
+
     response.end('{"user":{"email":"test@example.com"}}');
   });
   backend.listen(0, '127.0.0.1');
@@ -108,4 +110,35 @@ test('admin proxy forwards login, cookies and origin only to its configured back
   assert.equal((await fetch(`${base}/`)).status, 200);
   await assert.rejects(createStaticServer(temp, 'http://backend/path'));
   await assert.rejects(createStaticServer(temp, 'file:///tmp'));
+});
+
+test('homepage proxy replaces forged visitor proofs with its own signed classification', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'olconet-visitor-proxy-test-'));
+  const secret = 'test-only-visitor-secret-at-least-32-characters';
+  const backend = createServer((request, response) => {
+    const proof = request.headers['x-olconet-visitor-proof'];
+    assert.match(proof, /:external$/);
+    assert.equal(request.headers['x-olconet-visitor-signature'], createHmac('sha256', secret).update(proof).digest('hex'));
+    assert.equal(request.headers['x-forwarded-for'], undefined);
+    response.setHeader('Content-Type', 'application/json');
+    response.end('{"total":1,"enabled":true}');
+  });
+  backend.listen(0, '127.0.0.1'); await once(backend, 'listening');
+  const proxy = await createStaticServer(temp, `http://127.0.0.1:${backend.address().port}`, '/api/public/', {
+    VISITOR_PROXY_SECRET: secret, VISITOR_TRUSTED_PROXIES: '127.0.0.1', VISITOR_EXCLUDED_IPS: '203.0.113.10',
+  });
+  proxy.listen(0, '127.0.0.1'); await once(proxy, 'listening');
+  t.after(async () => {
+    await new Promise(resolve => proxy.close(resolve));
+    await new Promise(resolve => backend.close(resolve));
+    await rm(temp, { recursive: true });
+  });
+  const response = await fetch(`http://127.0.0.1:${proxy.address().port}/api/public/visitors`, {
+    method: 'POST', headers: {
+      'X-Forwarded-For': '198.51.100.20',
+      'X-Olconet-Visitor-Proof': 'forged',
+      'X-Olconet-Visitor-Signature': 'forged',
+    }, body: '{}',
+  });
+  assert.deepEqual(await response.json(), { total: 1, enabled: true });
 });

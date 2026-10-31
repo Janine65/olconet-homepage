@@ -20,8 +20,10 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthRequest>();
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      const visitor = request.method === 'POST' && request.path === '/api/public/visitors';
+      const origin = visitor ? process.env['SITE_URL'] : this.config.origin;
       const multipart = this.reflector.getAllAndOverride<boolean>(MULTIPART_ROUTE, [context.getHandler(), context.getClass()]);
-      if (request.headers.origin !== this.config.origin ||
+      if (request.headers.origin !== origin ||
         request.headers['x-olconet-request'] !== '1' ||
         !request.is(multipart ? 'multipart/form-data' : 'application/json')) {
         throw new ForbiddenException('Ungueltiger Ursprung oder ungueltiges Anfrageformat.');

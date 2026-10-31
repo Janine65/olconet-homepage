@@ -6,7 +6,7 @@ import { hashPassword, verifyPassword } from '../src/auth/password';
 import { sessionToken, tokenHash } from '../src/auth/auth.service';
 
 test('Origin-Konfiguration erlaubt lokales HTTP und aktiviert Secure nur bei HTTPS', () => {
-  assert.deepEqual(readAuthConfig({}), { origin: 'http://localhost:18432', secure: false });
+  assert.deepEqual(readAuthConfig({}), { origin: 'http://localhost:18442', secure: false });
   assert.deepEqual(readAuthConfig({ NODE_ENV: 'production', ADMIN_ORIGIN: 'https://admin.example.com' }),
     { origin: 'https://admin.example.com', secure: true });
   assert.equal(readAuthConfig({ ADMIN_ORIGIN: 'http://127.0.0.1:18432' }).secure, false);

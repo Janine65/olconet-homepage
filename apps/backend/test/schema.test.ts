@@ -12,6 +12,7 @@ test('Historische SQL-Migrationen entsprechen den zugehoerigen Prisma-Modellen',
   const schema = readFileSync('prisma/schema.prisma', 'utf8');
   const reportImagesSchema = join(directory, 'report-images.prisma');
   const historical = schema
+    .replace(/\nmodel VisitorSession \{[\s\S]*?\n\}\n/, '\n')
     .replace(/^.*\b(?:titleEn|excerptEn|destinationEn|altTextEn|descriptionEn|contentHtmlEn|captionEn)\s+String.*\n/gm, '')
     .replace(/\nmodel ReportPage \{[\s\S]*?\n\}\n/, '\n')
     .replace(/^.*(?:pages\s+ReportPage|parentId\s+String|parent\s+MediaAsset|children\s+MediaAsset|@@index\(\[parentId\]\)|pageId\s+String|page\s+ReportPage|@@index\(\[reportId\]\)).*\n/gm, '')
@@ -44,6 +45,10 @@ test('Historische SQL-Migrationen entsprechen den zugehoerigen Prisma-Modellen',
     statements(readFileSync('prisma/migrations/20261011120000_media_upload/migration.sql', 'utf8')));
   assert.deepEqual(statements(diff(['--from-schema', mediaSchema], reportImagesSchema)),
     statements(readFileSync('prisma/migrations/20261011130000_report_images/migration.sql', 'utf8')));
+  const beforeVisitors = join(directory, 'before-visitors.prisma');
+  writeFileSync(beforeVisitors, schema.replace(/\nmodel VisitorSession \{[\s\S]*?\n\}\n/, '\n'));
+  assert.deepEqual(statements(diff(['--from-schema', beforeVisitors], 'prisma/schema.prisma')),
+    statements(readFileSync('prisma/migrations/20261031110000_visitor_sessions/migration.sql', 'utf8')));
 });
 
 test('Migrationsbefehle ohne DATABASE_URL scheitern explizit', (t) => {

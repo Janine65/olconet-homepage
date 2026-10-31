@@ -1,5 +1,6 @@
 ---
 import PhotoViewer from '../components/PhotoViewer.astro';
+import { version } from '../../../../package.json';
 import { pagePath, translations, type Language } from '../i18n';
 interface Props { title: string; lang?: Language; }
 const { title, lang = 'de' } = Astro.props;
@@ -33,13 +34,18 @@ const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
       </nav>
     </header>
     <main><slot /></main>
-    <footer>olconet &middot; {t('Janines persoenliche Homepage', "Janine's personal homepage")}</footer>
+    <footer>
+      olconet &middot; {t('Janines persoenliche Homepage', "Janine's personal homepage")}
+      {' \u00b7 Version '}{version}
+      <span data-visitors aria-live="polite"></span>
+    </footer>
     <PhotoViewer lang={lang} />
   </body>
 </html>
 <script>
   import { syncLanguageLinks } from '../i18n';
   syncLanguageLinks();
+  import '../scripts/visitors';
 </script>
 <style is:global>
   :root { font-family: system-ui, sans-serif; color: #243b36; background: #faf8f3; }

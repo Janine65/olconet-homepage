@@ -41,13 +41,14 @@ pnpm dev
 
 | Anwendung | Lokal |
 | --- | --- |
-| Homepage | http://localhost:18431 |
-| Verwaltung | http://localhost:18432 |
-| Backend-Liveness | http://localhost:18433/health/live |
-| Backend-Readiness | http://localhost:18433/health/ready |
+| Homepage | http://localhost:18441 |
+| Verwaltung | http://localhost:18442 |
+| Backend-Liveness | http://localhost:18443/health/live |
+| Backend-Readiness | http://localhost:18443/health/ready |
 
-Die lokalen App-Ports liegen bewusst im Bereich 18431–18433, um Konflikte
-mit anderen Projekten zu vermeiden. Der interne Container-Port
+Die lokalen Dev-Ports liegen bewusst im Bereich 18441–18443, damit `pnpm dev`
+nicht mit den lokal laufenden Docker-Containern (18431–18433) kollidiert und
+Konflikte mit anderen Projekten vermieden werden. Der interne Container-Port
 bleibt 8080; der bestehende PostgreSQL-Port bleibt ebenfalls unveraendert.
 
 Ohne `DATABASE_URL` startet das Backend absichtlich nicht. Liveness benoetigt
@@ -57,7 +58,7 @@ Migrationsstand. Die Homepage wird statisch gebaut und laedt aktuelle
 Reiseberichte im Browser aus der Public-API; der RSS-Feed wird serverseitig
 aus PostgreSQL erzeugt. Die Verwaltung greift ueber ihren Same-Origin-Proxy
 auf das Backend zu. Fuer den Login genau
-`http://localhost:18432` verwenden; `127.0.0.1` ist eine andere Origin.
+`http://localhost:18442` verwenden; `127.0.0.1` ist eine andere Origin.
 
 ```sh
 pnpm check
@@ -127,7 +128,7 @@ Ein Passwort-Reset und eine Kontoverwaltungsoberflaeche folgen spaeter.
 
 `ADMIN_ORIGIN` ist die vollstaendige Browser-Origin der Verwaltung, ohne
 Pfad oder abschliessenden Slash. Standard bei `pnpm dev`:
-`http://localhost:18432`. In Produktion muss sie explizit gesetzt werden.
+`http://localhost:18442`. In Produktion muss sie explizit gesetzt werden.
 HTTP ist nur fuer localhost/Loopback erlaubt. Bei einer HTTPS-Origin werden
 automatisch Secure-Cookies gesetzt, auch hinter dem Synology-Reverse-Proxy;
 HTTP auf localhost verwendet fuer Tests Cookies ohne Secure.
@@ -139,14 +140,15 @@ Verwaltungsadresse verwenden.“, die Adresse im Browser mit `ADMIN_ORIGIN`
 vergleichen. Protokoll, Host und Port muessen exakt uebereinstimmen.
 
 Bei der lokalen Standardkonfiguration die Verwaltung in **jedem Browser,
-auch Safari, unter http://localhost:18432/** oeffnen. Nicht
-`http://127.0.0.1:18432` verwenden: Beide Adressen zeigen auf denselben Mac,
+auch Safari, unter http://localhost:18442/** oeffnen (Docker-Container auf
+dem Mac: http://localhost:18432/). Nicht
+`http://127.0.0.1:18442` verwenden: Beide Adressen zeigen auf denselben Mac,
 gelten aber als unterschiedliche Origins. Daher kann der Login in VS Code
 funktionieren und in Safari abgelehnt werden, wenn dort die IP-Adresse
 verwendet wird. Vorhandene Lesezeichen entsprechend anpassen.
 
 Soll bewusst `127.0.0.1` verwendet werden, `ADMIN_ORIGIN` in der jeweils
-verwendeten Backend-Konfiguration auf `http://127.0.0.1:18432` setzen und
+verwendeten Backend-Konfiguration auf `http://127.0.0.1:18442` setzen und
 das Backend neu starten (bei Docker den Backend-Container mit der neuen
 Konfiguration neu erstellen). Anschliessend nur diese Adresse verwenden.
 
@@ -314,11 +316,14 @@ Felder `contentHtml` und `images` spiegeln die erste freigegebene Seite.
 
 ### Homepage und RSS
 
-- Liste: `http://localhost:18431/reisen/`
+- Liste: `http://localhost:18441/reisen/`
 - Einzelbericht: `/reisen/bericht/?slug=mein-bericht`
 - Bestimmte Berichtsseite: `/reisen/bericht/?slug=mein-bericht&seite=SEITEN-UUID`
 - RSS 2.0: `/api/public/reports/rss` (auch im Seitenkopf als Feed verlinkt)
 
+Reiseberichte stehen nach Veroeffentlichungsdatum absteigend (neueste zuerst).
+Innerhalb eines Berichts bleiben Seiten und Fotos in der gespeicherten,
+aufsteigenden Reihenfolge.
 Listen haben 20 Eintraege pro Seite; der Feed enthaelt die neuesten 50
 veroeffentlichten Berichte mit Kurzbeschreibung und stabiler GUID.
 Auf der Homepage blaettern **Vorherige / Naechste Seite** oder die Seitenauswahl
@@ -336,7 +341,7 @@ ergaenzt werden; derzeit erfordert Veroeffentlichung keinen Homepage-Neubuild.
 
 `SITE_URL` konfiguriert die oeffentliche Homepage-Origin fuer absolute
 RSS-Links, ohne Pfad oder abschliessenden Slash. Lokal gilt standardmaessig
-`http://localhost:18431`; in Docker und Produktion explizit setzen.
+`http://localhost:18441`; in Docker und Produktion explizit setzen.
 Bestehende `.env.docker.mac`/`.env.docker.synology` um `SITE_URL` ergaenzen.
 Backend und Container nach Konfigurationsaenderungen neu starten bzw. erstellen.
 
@@ -430,9 +435,9 @@ Seitenwechsel bestaetigt. Laufende Schreibanfragen und Uploads sperren den
 Wechsel. Dies gilt auch fuer Browser-Zurueck und Abmelden.
 
 Unterseiten haben direkt verlinkbare Hash-Adressen, z.B.
-`http://localhost:18432/#/reiseberichte`,
-`http://localhost:18432/#/sammy/sortieren` und
-`http://localhost:18432/#/bildbibliothek/upload`.
+`http://localhost:18442/#/reiseberichte`,
+`http://localhost:18442/#/sammy/sortieren` und
+`http://localhost:18442/#/bildbibliothek/upload`.
 Diese funktionieren nach einem Neuladen auch im Docker-Static-Server ohne
 zusaetzliche SPA-Fallbacks. Ohne Sitzung erscheint zuerst die Anmeldung;
 danach wird die angeforderte Unterseite geoeffnet. Nicht vorhandene
@@ -480,11 +485,93 @@ Die Ansicht laesst sich mit **Schliessen** oder **Escape** verlassen.
 Mit der Tastatur ein Foto per Tab auswaehlen und per Enter oder Leertaste oeffnen;
 beim Schliessen kehrt der Fokus zum Foto zurueck.
 
+### Version und Besucherzaehler in der Fusszeile
+
+Die Verwaltung zeigt unter **Systeminfo** (`/#/system`) die Paketversionen
+von Homepage, Admin und Backend sowie die Besucheranzahl und den
+Erfassungsstatus. **Systeminformationen neu laden** aktualisiert den Stand,
+ohne einen Besuch zu zaehlen. Der Endpoint `GET /api/admin/system` verlangt
+eine gueltige Verwaltungssitzung.
+
+Die Admin-Version stammt aus dem geladenen Admin-Build; Homepage und
+Release zeigen den mit dem Backend-Image ausgelieferten Paketstand.
+Homepage und Backend deshalb gemeinsam deployen. Bei abweichender
+Admin-Version wird eine Warnung angezeigt. Die zentrale Release-Version
+(Homepage-Fusszeile) und die drei Paketversionen koennen unterschiedlich sein.
+
+Alle deutschen und englischen Seiten zeigen die Version aus der zentralen
+`package.json`. Ein Neubuild uebernimmt eine geaenderte Version automatisch,
+auch im Docker-Image.
+
+Der Besucherzaehler erfasst **Browser-Sitzungen**, nicht Seitenaufrufe oder
+eindeutig identifizierte Personen. Ein HttpOnly-/SameSite=Strict-Sitzungscookie
+`olconet_visit` verhindert erneutes Zaehlen bei Seitenwechseln und Neuladen
+(auch zwischen Deutsch und Englisch). Er hat kein festes Ablaufdatum;
+Browser mit Sitzungswiederherstellung koennen ihn nach einem Neustart behalten.
+Ohne Cookies oder nach deren Loeschung wird ein neuer Besuch gezaehlt.
+Gleichzeitige allererste Aufrufe ohne Cookie koennen getrennte Sitzungen erzeugen.
+Automatisierte Aufrufe lassen sich nicht sicher von Menschen unterscheiden.
+
+In PostgreSQL werden nur eine zufaellige Sitzungs-ID und deren Erfassungszeit
+in `VisitorSession` gespeichert, **keine IP-Adressen**, Browser-Fingerprints
+oder externen Analytics-Daten. Diese Datensaetze bleiben fuer den Gesamtstand
+erhalten. Der Zaehler beginnt bei null und ueberlebt Backend-/Container-Neustarts.
+Datenschutzhinweise und gegebenenfalls erforderliche Einwilligungen vor
+oeffentlicher Aktivierung an die eigene Website anpassen.
+
+Dev-Modus, Loopback und private LAN-Adressen werden nicht gezaehlt.
+Fuer den oeffentlichen Betrieb in `.env.docker.synology` setzen:
+
+```dotenv
+# Lokal erzeugen, niemals ins Repository committen: openssl rand -hex 32
+VISITOR_PROXY_SECRET=<zufaelliges Secret mit mindestens 32 Zeichen>
+VISITOR_TRUSTED_PROXIES=192.168.1.200
+VISITOR_EXCLUDED_IPS=<oeffentliche Heimnetz-IP>
+```
+
+Mehrere IPv4-/IPv6-Adressen kommasepariert angeben. Bei einem wechselnden
+Internetanschluss oder wechselnden IPv6-Adressen die Ausnahmen aktualisieren.
+Ausgeschlossen wird das gesamte Heimnetz mit derselben oeffentlichen IP,
+nicht nur ein einzelner Browser. Die eigene oeffentliche IP wird nicht
+automatisch anhand anderer Besucher ermittelt.
+
+**Proxy-Konfiguration:** `VISITOR_TRUSTED_PROXIES` muss die IP des unmittelbar
+vorgeschalteten Reverse-Proxys enthalten, **wie der Homepage-Container sie sieht**.
+Docker-NAT kann von `192.168.1.200` abweichende Adressen sichtbar machen.
+Nur dedizierte, vertrauenswuerdige Proxys eintragen, keine pauschalen LAN-Netze.
+Der Reverse-Proxy muss `X-Forwarded-For` mit genau einer selbst ermittelten
+Client-IP **ueberschreiben**, nicht ungeprueft weiterreichen oder anhaengen.
+Header anderer Absender werden ignoriert; mehrdeutige Proxy-Ketten werden
+nicht gezaehlt. Die Homepage ersetzt eingehende Zaehler-Header und signiert
+lediglich die Klassifikation „lokal/ausgeschlossen“ oder „extern“ zum Backend.
+Die urspruengliche IP wird dabei nicht an das Backend weitergereicht.
+
+Ohne alle drei Einstellungen bleibt die Erfassung deaktiviert; die Fusszeile
+zeigt dies ausdruecklich. Fehler bei API/Proxy/Datenbank werden als
+„Besucherzaehler nicht verfuegbar“ angezeigt, nicht als erfolgreicher Nullstand.
+`SITE_URL` muss exakt der Browser-Origin entsprechen.
+
+Nach der Einrichtung Images neu bauen, mit dem `migrate`-Service die neue
+Migration ausfuehren und Homepage/Backend mit der neuen Konfiguration neu
+erstellen. Lokal vor dem Backend-Start `pnpm db:deploy` ausfuehren.
+Die API `GET /api/public/visitors` liest nur den Stand; `POST` erfasst einen
+Besuch ausschliesslich mit gueltiger Proxy-Signatur und Homepage-Origin.
+Der Zaehler ist unabhaengig von Verwaltungssitzungen.
+
 ### Sammy und Meine Kreationen einfach sortieren
 
 Im Bereich **Sammy** oder **Meine Kreationen** **Reihenfolge sortieren**
 waehlen. Die Sortieransicht zeigt pro Seite 20 Bilder,
 einschliesslich privater Entwuerfe, mit ihrer Position in der gesamten Kategorie.
+
+Neue Veroeffentlichungen (Einzelbilder oder Fotogruppen) werden automatisch
+vorne auf der Homepage eingeordnet. Die bisherige Reihenfolge der anderen
+veroeffentlichten Eintraege bleibt erhalten und kann weiterhin manuell
+geaendert werden. Das gilt auch nach einer Ruecknahme und erneuten
+Veroeffentlichung sowie beim Wechsel eines veroeffentlichten Eintrags in
+die andere Galerie. Erneutes Veroeffentlichen eines bereits sichtbaren
+Eintrags und das Anhaengen von Gruppenfotos verschieben ihn nicht.
+Fotos innerhalb einer Gruppe behalten ihre aufsteigende Reihenfolge.
 
 - Am Griff **Ziehen** ein Bild innerhalb der angezeigten Seite verschieben
   (auch auf Touch-Geraeten).

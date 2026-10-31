@@ -49,6 +49,11 @@ model LoginThrottle {
   @@index([expiresAt])
 }
 
+model VisitorSession {
+  id        String   @id @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+}
+
 model TravelReport {
   id              String            @id @default(uuid()) @db.Uuid
   slug            String            @unique

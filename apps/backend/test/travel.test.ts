@@ -48,7 +48,7 @@ test('RSS escaped XML, stabile GUIDs und konfigurierbare Homepage-Adresse', () =
   assert.match(feed, /urn:olconet:travel:abc/);
   assert.match(feed, /https:\/\/olconet.com\/reisen\/bericht\/\?slug=reise/);
   assert.match(feed, /Thu, 01 Jan 2026 00:00:00 GMT/);
-  assert.equal(readSiteUrl({}), 'http://localhost:18431');
+  assert.equal(readSiteUrl({}), 'http://localhost:18441');
   assert.throws(() => readSiteUrl({ NODE_ENV: 'production' }));
   for (const site of ['file:///tmp', 'https://example.com/', 'https://user:pw@example.com']) {
     assert.throws(() => readSiteUrl({ SITE_URL: site }));

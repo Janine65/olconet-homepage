@@ -157,6 +157,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
         authorId: admin.id, title: `Bericht ${i}`, slug: `bericht-${i}`, excerpt: 'Test',
         contentHtml: '<p>Test</p>', status: i < 21 ? 'PUBLISHED' : 'DRAFT',
         publishedAt: i < 21 ? new Date(Date.UTC(2026, 0, i + 1)) : null,
+        createdAt: new Date(Date.UTC(2026, 0, 22 - i)),
       })),
     });
     const first = await (await get('/api/public/reports')).json();
@@ -165,6 +166,12 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal(first.items[0].slug, 'bericht-20');
     assert.equal(first.total, 21);
     assert.equal(second.items.length, 1);
+    assert.deepEqual(first.items.map((item: { slug: string }) => item.slug),
+      Array.from({ length: 20 }, (_, i) => `bericht-${20 - i}`));
+    assert.equal(second.items[0].slug, 'bericht-0');
+    const english = await (await get('/api/public/reports?lang=en')).json();
+    assert.deepEqual(english.items.map((item: { slug: string }) => item.slug),
+      first.items.map((item: { slug: string }) => item.slug));
     assert.equal((await (await get('/api/admin/reports?page=2', true)).json()).items.length, 2);
     assert.equal((await get('/api/public/reports/bericht-21')).status, 404);
     const xml = await (await get('/api/public/reports/rss')).text();

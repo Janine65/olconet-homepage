@@ -129,6 +129,7 @@ test('Bestehende Fotogruppen sicher erweitern', async t => {
     assert.equal((await post(`/api/admin/media/${modified}/save`, { ...metadata, category: 'SAMMY', revision: 0 })).status, 201);
     const published = await upload();
     assert.equal((await post(`/api/admin/media/${published}/publish`, { revision: 0 })).status, 201);
+    root = await current(id);
     const otherGroup = await group();
     for (const invalid of [wrongCategory, modified, published, otherGroup, (await current(otherGroup)).children[0]!.id]) {
       assert.equal((await post(`/api/admin/media/${id}/photos`, { ids: [valid, invalid], revision: root.revision })).status, 409);

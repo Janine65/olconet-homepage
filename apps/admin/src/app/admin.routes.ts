@@ -16,6 +16,8 @@ export const adminRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'uebersicht' },
   { path: 'uebersicht', title: 'Uebersicht | olconet Verwaltung',
     loadComponent: () => import('./overview.component').then(module => module.OverviewComponent) },
+  { path: 'system', title: 'Systeminfo | olconet Verwaltung',
+    loadComponent: () => import('./system.component').then(module => module.SystemComponent) },
   { path: 'reiseberichte', title: 'Reiseberichte | olconet Verwaltung', loadComponent: reports, canDeactivate: [leavePage] },
   { path: 'reiseberichte/neu', title: 'Neuer Reisebericht | olconet Verwaltung',
     loadComponent: reports, data: { mode: 'new' }, canDeactivate: [leavePage] },

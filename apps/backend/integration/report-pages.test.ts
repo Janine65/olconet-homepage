@@ -131,6 +131,20 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     assert.equal(body.contentHtml, '');
     assert.equal((await image(3)).status, 200); assert.equal((await image(2)).status, 404);
   });
+  await t.test('Fotos folgen der aufsteigenden Seitenreihenfolge, nicht dem Upload- oder Veroeffentlichungsdatum', async () => {
+    const original = pages;
+    pages = pages.map(item => item.id === photos.id ? {
+      ...item, galleryImages: [assets[3]!, assets[1]!].map(assetId => ({ assetId, caption: 'Foto' })),
+    } : item);
+    assert.equal((await save()).status, 201); await refresh();
+    for (const lang of ['de', 'en']) {
+      const body = await (await get(`/api/public/reports/${metadata.slug}?lang=${lang}`)).json();
+      assert.deepEqual(body.pages.map((item: { id: string }) => item.id), [photos.id, first.id]);
+      assert.deepEqual(body.pages[0].images.map((item: { assetId: string }) => item.assetId), [assets[3], assets[1]]);
+    }
+    pages = original;
+    assert.equal((await save()).status, 201); await refresh();
+  });
   await t.test('Falsche Kategorien, fremde Seiten-IDs, alte Clients und veraltete Versionen koennen keine Seiten ueberschreiben', async () => {
     const oldVersion = report.version;
     assert.equal((await post(`/api/admin/reports/${report.id}/save`, { ...metadata, contentHtml: '<p>Alt</p>', version: report.version })).status, 409);

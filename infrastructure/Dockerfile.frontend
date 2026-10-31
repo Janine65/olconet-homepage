@@ -19,6 +19,7 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=8080
 COPY --from=build /site ./public
 COPY infrastructure/static-server.mjs ./static-server.mjs
+COPY infrastructure/visitor-proxy.mjs ./visitor-proxy.mjs
 USER 1001
 EXPOSE 8080
 CMD ["node", "static-server.mjs", "public"]

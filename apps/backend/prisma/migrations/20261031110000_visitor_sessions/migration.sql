@@ -1,0 +1,5 @@
+CREATE TABLE "VisitorSession" (
+  "id" UUID NOT NULL,
+  "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "VisitorSession_pkey" PRIMARY KEY ("id")
+);

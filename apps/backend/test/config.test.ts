@@ -5,7 +5,7 @@ import { readConfig } from '../src/config';
 const databaseUrl = 'postgresql://localhost:5432/olconet';
 
 test('liest die PostgreSQL-Konfiguration und den Standardport', () => {
-  assert.deepEqual(readConfig({ DATABASE_URL: databaseUrl }), { databaseUrl, port: 18433 });
+  assert.deepEqual(readConfig({ DATABASE_URL: databaseUrl }), { databaseUrl, port: 18443 });
 });
 
 test('akzeptiert den internen Container-Port', () => {

@@ -94,20 +94,33 @@ export class MediaService implements OnModuleInit {
           await lockMedia(db, this.prisma.databaseSchema, ordered.map(item => item.id));
           const [asset] = ordered.splice(index, 1);
           ordered.splice(input.position - 1, 0, asset!);
-          const changed = ordered.map((item, position) => ({ ...item, position }))
-            .filter(item => item.sortOrder !== item.position);
-          // Normalize ties to unique ranks; update revisions so older metadata forms cannot undo the move.
-          for (let offset = 0; offset < changed.length; offset += 500) {
-            const rows = changed.slice(offset, offset + 500);
-            await db.$executeRaw(Prisma.sql`UPDATE ${Prisma.raw(`"${this.prisma.databaseSchema.replace(/"/g, '""')}"."MediaAsset"`)} AS asset
-              SET "sortOrder" = ranks.position, "revision" = asset."revision" + 1, "updatedAt" = CURRENT_TIMESTAMP
-              FROM (VALUES ${Prisma.join(rows.map(item => Prisma.sql`(${item.id}::uuid, ${item.position}::integer)`))})
-                AS ranks(id, position) WHERE asset."id" = ranks.id`);
-          }
+          await this.saveRanks(db, ordered.map((item, position) => ({ ...item, position })));
         }
         return { saved: true, position: input.position };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) { this.transactionError(error); }
+  }
+
+  private async saveRanks(db: Prisma.TransactionClient, items: { id: string; sortOrder: number; position: number }[]) {
+    const changed = items.filter(item => item.sortOrder !== item.position);
+    // Updating revisions prevents older metadata forms from undoing a new order.
+    for (let offset = 0; offset < changed.length; offset += 500) {
+      const rows = changed.slice(offset, offset + 500);
+      await db.$executeRaw(Prisma.sql`UPDATE ${Prisma.raw(`"${this.prisma.databaseSchema.replace(/"/g, '""')}"."MediaAsset"`)} AS asset
+        SET "sortOrder" = ranks.position, "revision" = asset."revision" + 1, "updatedAt" = CURRENT_TIMESTAMP
+        FROM (VALUES ${Prisma.join(rows.map(item => Prisma.sql`(${item.id}::uuid, ${item.position}::integer)`))})
+          AS ranks(id, position) WHERE asset."id" = ranks.id`);
+    }
+  }
+
+  private async prependPublished(db: Prisma.TransactionClient, id: string, category: 'DRAWING' | 'SAMMY') {
+    const ordered = await db.mediaAsset.findMany({
+      where: { category, parentId: null, status: 'PUBLISHED', id: { not: id } },
+      orderBy: [...mediaOrderBy], select: { id: true, sortOrder: true },
+    });
+    if (ordered.length > 1000000) throw new BadRequestException('Die Kategorie ist fuer die automatische Sortierung zu gross.');
+    await lockMedia(db, this.prisma.databaseSchema, [id, ...ordered.map(item => item.id)]);
+    await this.saveRanks(db, ordered.map((item, index) => ({ ...item, position: index + 1 })));
   }
 
   private transactionError(error: unknown): never {
@@ -236,11 +249,13 @@ export class MediaService implements OnModuleInit {
       if (current.category !== data.category && (current._count.reports || (current.status === 'PUBLISHED' && data.category === 'TRAVEL'))) {
         throw new ConflictException('Vor dem Kategorie-Wechsel Berichtszuordnungen entfernen und Veroeffentlichung zuruecknehmen.');
       }
-      await db.mediaAsset.update({ where: { id }, data: { ...data, revision: { increment: 1 } } });
+      const prepend = current.category !== data.category && current.status === 'PUBLISHED' && data.category !== 'TRAVEL';
+      if (prepend) await this.prependPublished(db, id, galleryCategory(data.category));
+      await db.mediaAsset.update({ where: { id }, data: { ...data, ...(prepend ? { sortOrder: 0 } : {}), revision: { increment: 1 } } });
       const { sortOrder: _sortOrder, ...shared } = data;
       await db.mediaAsset.updateMany({ where: { parentId: id }, data: { ...shared, revision: { increment: 1 } } });
       return { saved: true };
-    }).catch(error => this.transactionError(error));
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }).catch(error => this.transactionError(error));
   }
 
   async status(id: string, revision: number, published: boolean) {
@@ -251,12 +266,16 @@ export class MediaService implements OnModuleInit {
       if (asset.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe veroeffentlichen oder zuruecknehmen.');
       if (asset.category === 'TRAVEL') throw new BadRequestException('Reisebilder werden ausschliesslich mit ihrem Reisebericht veroeffentlicht.');
       if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (published && asset.status === 'DRAFT') {
+        await this.prependPublished(db, id, asset.category);
+        await db.mediaAsset.update({ where: { id }, data: { sortOrder: 0 } });
+      }
       await db.mediaAsset.updateMany({
         where: { OR: [{ id }, { parentId: id }] },
         data: { status: published ? 'PUBLISHED' : 'DRAFT', publishedAt: published ? new Date() : null, revision: { increment: 1 } },
       });
       return { saved: true };
-    }).catch(error => this.transactionError(error));
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }).catch(error => this.transactionError(error));
   }
 
   async delete(id: string, revision: number) {

@@ -113,4 +113,61 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
     assert.equal((await post({ category: 'SAMMY', assetId: snapshot.items[0].id, position: 1, token: snapshot.token })).status, 201);
     assert.equal((await order()).token, snapshot.token);
   });
+  for (const category of ['DRAWING', 'SAMMY'] as const) {
+    await t.test(`${category}: neue Veroeffentlichungen vorne, manuelle Reihenfolge und Gruppenfotos bleiben erhalten`, async () => {
+      const gallery = async () => {
+        const first = await (await get(`/api/public/media?category=${category}`, false)).json();
+        const second = await (await get(`/api/public/media?category=${category}&page=2`, false)).json();
+        return [...first.items, ...second.items] as { id: string; children: { id: string }[] }[];
+      };
+      const previous = await gallery();
+      const fixture = (suffix: string, sortOrder: number) => ({
+        category, title: suffix, altText: suffix, originalName: 'fixture',
+        storageKey: `${prefix}${category}-${suffix}`, mimeType: 'image/webp', byteSize: 1,
+        sortOrder, createdAt: new Date('2020-01-01'),
+      });
+      const single = await db.mediaAsset.create({ data: fixture('single', 900) });
+      const publish = async (id: string) => {
+        const asset = await db.mediaAsset.findUniqueOrThrow({ where: { id } });
+        return fetch(`${base}/api/admin/media/${id}/publish`, {
+          method: 'POST', headers: { ...headers, Cookie: cookie }, body: JSON.stringify({ revision: asset.revision }),
+        });
+      };
+      assert.equal((await publish(single.id)).status, 201);
+      assert.deepEqual((await gallery()).map(item => item.id), [single.id, ...previous.map(item => item.id)]);
+      const group = await db.mediaAsset.create({ data: fixture('group', 800) });
+      const last = await db.mediaAsset.create({ data: { ...fixture('last', 2), parentId: group.id } });
+      const first = await db.mediaAsset.create({ data: { ...fixture('first', 1), parentId: group.id } });
+      assert.equal((await publish(group.id)).status, 201);
+      const after = await gallery();
+      assert.deepEqual(after.map(item => item.id), [group.id, single.id, ...previous.map(item => item.id)]);
+      assert.deepEqual(after[0].children.map(item => item.id), [first.id, last.id]);
+      const snapshot: OrderPage = await (await get(`/api/admin/media/order?category=${category}`)).json();
+      assert.equal((await post({ category, assetId: single.id, position: 1, token: snapshot.token })).status, 201);
+      assert.deepEqual((await gallery()).slice(0, 2).map(item => item.id), [single.id, group.id]);
+      assert.equal((await publish(group.id)).status, 201);
+      assert.deepEqual((await gallery()).slice(0, 2).map(item => item.id), [single.id, group.id]);
+      const visible = await db.mediaAsset.findUniqueOrThrow({ where: { id: group.id } });
+      const unpublish = await fetch(`${base}/api/admin/media/${group.id}/unpublish`, {
+        method: 'POST', headers: { ...headers, Cookie: cookie }, body: JSON.stringify({ revision: visible.revision }),
+      });
+      assert.equal(unpublish.status, 201);
+      assert.equal((await gallery()).some(item => item.id === group.id), false);
+      assert.equal((await publish(group.id)).status, 201);
+      assert.deepEqual((await gallery()).slice(0, 2).map(item => item.id), [group.id, single.id]);
+      assert.equal((await db.mediaAsset.findUniqueOrThrow({ where: { id: first.id } })).sortOrder, 1);
+      assert.equal((await db.mediaAsset.findUniqueOrThrow({ where: { id: last.id } })).sortOrder, 2);
+    });
+  }
+  await t.test('Veroeffentlichte Kategorie-Wechsel werden in der Zielgalerie vorne eingefuegt', async () => {
+    const asset = await db.mediaAsset.findFirstOrThrow({ where: { category: 'DRAWING', parentId: null, status: 'PUBLISHED' } });
+    const response = await fetch(`${base}/api/admin/media/${asset.id}/save`, {
+      method: 'POST', headers: { ...headers, Cookie: cookie },
+      body: JSON.stringify({ category: 'SAMMY', title: asset.title, altText: asset.altText,
+        description: '', sortOrder: 900, revision: asset.revision }),
+    });
+    assert.equal(response.status, 201);
+    const gallery = await (await get('/api/public/media?category=SAMMY', false)).json();
+    assert.equal(gallery.items[0].id, asset.id);
+  });
 });

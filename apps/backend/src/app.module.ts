@@ -12,9 +12,10 @@ import { TravelController } from './travel/travel.controller';
 import { PublicTravelController } from './travel/public-travel.controller';
 import { MediaService } from './media/media.service';
 import { MediaController, PublicMediaController } from './media/media.controller';
+import { VisitorsController } from './visitors.controller';
 
 @Module({
-  controllers: [HealthController, AuthController, AdminController, TravelController, PublicTravelController, MediaController, PublicMediaController],
+  controllers: [HealthController, AuthController, AdminController, TravelController, PublicTravelController, MediaController, PublicMediaController, VisitorsController],
   providers: [
     PrismaService, AuthService, TravelService, MediaService,
     { provide: APP_GUARD, useClass: AuthGuard },

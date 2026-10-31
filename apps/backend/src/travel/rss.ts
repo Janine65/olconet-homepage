@@ -2,7 +2,7 @@ import { ConfigurationError } from '../config';
 import { Language } from '../language';
 
 export function readSiteUrl(env: NodeJS.ProcessEnv) {
-  const value = env['SITE_URL'] ?? (env['NODE_ENV'] === 'production' ? '' : 'http://localhost:18431');
+  const value = env['SITE_URL'] ?? (env['NODE_ENV'] === 'production' ? '' : 'http://localhost:18441');
   let url: URL;
   try { url = new URL(value); } catch { throw new ConfigurationError('SITE_URL muss eine gueltige Homepage-Origin sein.'); }
   if (!['https:', 'http:'].includes(url.protocol) || url.origin !== value || url.username || url.password) {

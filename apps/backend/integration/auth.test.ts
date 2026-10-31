@@ -9,6 +9,7 @@ import { configureHttp } from '../src/http';
 import { PrismaService } from '../src/prisma.service';
 import { hashPassword } from '../src/auth/password';
 import { tokenHash } from '../src/auth/auth.service';
+import { readFileSync } from 'node:fs';
 
 test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) => {
   const databaseUrl = process.env['TEST_DATABASE_URL'];
@@ -59,7 +60,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
   });
 
   await t.test('Ohne Sitzung sind private Endpunkte gesperrt; Health bleibt oeffentlich', async () => {
-    for (const path of ['/api/auth/me', '/api/admin/overview']) {
+    for (const path of ['/api/auth/me', '/api/admin/overview', '/api/admin/system']) {
       assert.equal((await fetch(`${base}${path}`)).status, 401);
     }
     for (const path of ['/health/live', '/health/ready']) {
@@ -121,6 +122,27 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     const overview = await fetch(`${base}/api/admin/overview`, { headers: { Cookie: cookie } });
     assert.equal(overview.status, 200);
     assert.deepEqual(await overview.json(), { reports: 0, drawings: 0, sammyPhotos: 0 });
+  });
+
+  await t.test('Systeminfo zeigt exakte Paketversionen und liest Besuche ohne neue Sitzung', async () => {
+    const visit = await prisma.visitorSession.create({ data: { id: '12345678-1234-4123-8123-123456789abc' } });
+    try {
+      const version = (path: string) => JSON.parse(readFileSync(path, 'utf8')).version;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch(`${base}/api/admin/system`, { headers: { Cookie: cookie } });
+        assert.equal(response.status, 200);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        assert.equal(response.headers.get('set-cookie'), null);
+        assert.deepEqual(await response.json(), {
+          versions: {
+            release: version('../../package.json'), homepage: version('../homepage/package.json'),
+            admin: version('../admin/package.json'), backend: version('package.json'),
+          },
+          visitors: { total: 1, enabled: false },
+        });
+      }
+      assert.equal(await prisma.visitorSession.count(), 1);
+    } finally { await prisma.visitorSession.delete({ where: { id: visit.id } }); }
     assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Cookie: 'olconet_session=forged' } })).status, 401);
   });
 
