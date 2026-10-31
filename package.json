@@ -7,7 +7,7 @@
     "node": ">=24.15.0 <25"
   },
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "node -e \"if(require('fs').existsSync('.git')){try{require('child_process').execFileSync('git',['config','core.hooksPath','.githooks'])}catch{console.warn('Git-Hooks nicht aktiviert: git config core.hooksPath .githooks')}}\"",
     "dev": "pnpm --parallel --filter './apps/*' dev",
     "build": "pnpm --filter @olconet/backend db:generate && pnpm -r build",
     "check": "pnpm --filter @olconet/backend db:generate && pnpm -r check",
