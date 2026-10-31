@@ -3,7 +3,7 @@ import { defineConfig } from 'prisma/config';
 
 const url = process.env['DATABASE_URL'];
 if (!url && (process.argv.includes('migrate') || process.argv.includes('db'))) {
-  throw new Error('DATABASE_URL muss fuer Datenbank- und Migrationsbefehle gesetzt sein.');
+  throw new Error('DATABASE_URL muss für Datenbank- und Migrationsbefehle gesetzt sein.');
 }
 
 export default defineConfig({

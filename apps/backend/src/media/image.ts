@@ -20,6 +20,6 @@ export async function normalizeImage(buffer: Buffer) {
   } catch (error) {
     if (error instanceof BadRequestException) throw error;
     if (error instanceof Error && /memory|disk|allocation/i.test(error.message)) throw error;
-    throw new BadRequestException('Das Bild ist ungueltig, beschaedigt oder hat mehr als 40 Millionen Pixel.');
+    throw new BadRequestException('Das Bild ist ungültig, beschädigt oder hat mehr als 40 Millionen Pixel.');
   }
 }

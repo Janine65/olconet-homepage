@@ -40,7 +40,7 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
   const post = (path: string, body: object) => fetch(`${base}${path}`, { method: 'POST',
     headers: { ...headers, Cookie: cookie }, body: JSON.stringify(body) });
   const get = (path: string, auth = false) => fetch(`${base}${path}`, { headers: auth ? { Cookie: cookie } : {} });
-  const data = { category: 'DRAWING', title: '<Zeichnung>', altText: 'Eine gruene Zeichnung', description: 'Test & Bild', sortOrder: 5 };
+  const data = { category: 'DRAWING', title: '<Zeichnung>', altText: 'Eine grüne Zeichnung', description: 'Test & Bild', sortOrder: 5 };
   const source = await sharp({ create: { width: 12, height: 6, channels: 3, background: 'green' } })
     .jpeg().withMetadata({ orientation: 6 }).toBuffer();
   const upload = (buffer: Buffer, metadata: object = data, auth = true, origin = headers.Origin, filename = 'bild.jpg') => {
@@ -66,7 +66,7 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     assert.equal((await upload(Buffer.alloc(MAX_UPLOAD_BYTES + 1))).status, 413);
     assert.deepEqual(await readdir(directory), []);
   });
-  await t.test('Upload ist privat, wird neu kodiert und gibt keine Speicherschluessel preis', async () => {
+  await t.test('Upload ist privat, wird neu kodiert und gibt keine Speicherschlüssel preis', async () => {
     const response = await upload(source, data, true, headers.Origin, '../../secret.jpg');
     assert.equal(response.status, 201);
     id = (await response.json()).id;
@@ -93,12 +93,12 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     assert.equal(metadata.exif, undefined);
     assert.equal((await readdir(directory)).length, 1);
   });
-  await t.test('Bilder und Sitzungen ueberleben einen Backend-Neustart', async () => {
+  await t.test('Bilder und Sitzungen überleben einen Backend-Neustart', async () => {
     await app.close();
     app = await createApp(); base = await app.getUrl();
     assert.equal((await get(`/api/admin/media/${id}/image`, true)).status, 200);
   });
-  await t.test('Veroeffentlichung schaltet Galerie und Bild frei, oeffentliches Loeschen bleibt gesperrt', async () => {
+  await t.test('Veröffentlichung schaltet Galerie und Bild frei, öffentliches Löschen bleibt gesperrt', async () => {
     assert.equal((await post(`/api/admin/media/${id}/publish`, { revision: 0 })).status, 201);
     const list = await (await get('/api/public/media?category=DRAWING')).json();
     assert.equal(list.total, 1); assert.equal(list.items[0].title, data.title);
@@ -119,7 +119,7 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     ]);
     assert.deepEqual(concurrent.map(r => r.status).sort(), [201, 409]);
   });
-  await t.test('Ruecknahme sperrt auch direkte Bild-URLs, Loeschen entfernt die Datei', async () => {
+  await t.test('Rücknahme sperrt auch direkte Bild-URLs, Löschen entfernt die Datei', async () => {
     assert.equal((await post(`/api/admin/media/${id}/unpublish`, { revision: 3 })).status, 201);
     assert.equal((await get(`/api/public/media/${id}/image`)).status, 404);
     assert.equal((await (await get('/api/public/media')).json()).total, 0);
@@ -160,7 +160,7 @@ test('Bildverwaltung mit isolierter Datenbank und Upload-Speicher', async (t) =>
     assert.equal((await (await get('/api/public/media?category=DRAWING&page=2')).json()).items.length, 1);
     await prisma.mediaAsset.deleteMany({ where: { originalName: 'fixture' } });
   });
-  await t.test('Multi-Fotogruppen sind eine gemeinsame Verwaltungs-, Sortier- und Veroeffentlichungseinheit', async () => {
+  await t.test('Multi-Fotogruppen sind eine gemeinsame Verwaltungs-, Sortier- und Veröffentlichungseinheit', async () => {
     const groupData = { ...data, category: 'SAMMY', sortOrder: 0 };
     const ids: string[] = [];
     for (let i = 0; i < 3; i++) {

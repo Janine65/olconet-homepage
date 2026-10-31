@@ -39,7 +39,7 @@ export class VisitorsController {
     const totals = await this.total();
     if (!totals.enabled) return totals;
     const proof = visitorProof(request.headers, this.secret);
-    if (!proof) throw new ServiceUnavailableException('Besucherzaehler: vertrauenswuerdige Proxy-Konfiguration fehlt.');
+    if (!proof) throw new ServiceUnavailableException('Besucherzähler: vertrauenswürdige Proxy-Konfiguration fehlt.');
     if (proof === 'excluded') return this.total();
     const cookies = (request.headers.cookie ?? '').split(';').map(value => value.trim())
       .filter(value => value.startsWith('olconet_visit='));

@@ -1,10 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 
 export function normalizeEmail(value: unknown): string {
-  if (typeof value !== 'string') throw new BadRequestException('Eine gueltige E-Mail-Adresse ist erforderlich.');
+  if (typeof value !== 'string') throw new BadRequestException('Eine gültige E-Mail-Adresse ist erforderlich.');
   const email = value.trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new BadRequestException('Eine gueltige E-Mail-Adresse ist erforderlich.');
+    throw new BadRequestException('Eine gültige E-Mail-Adresse ist erforderlich.');
   }
   return email;
 }

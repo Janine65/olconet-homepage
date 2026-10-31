@@ -20,9 +20,9 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error: unknown) => {
-  // Verbindungs-URLs koennen Zugangsdaten enthalten und werden nicht protokolliert.
+  // Verbindungs-URLs können Zugangsdaten enthalten und werden nicht protokolliert.
   Logger.error(error instanceof ConfigurationError
     ? error.message
-    : 'Backend-Start fehlgeschlagen. Konfiguration und Laufzeitumgebung pruefen.');
+    : 'Backend-Start fehlgeschlagen. Konfiguration und Laufzeitumgebung prüfen.');
   process.exitCode = 1;
 });

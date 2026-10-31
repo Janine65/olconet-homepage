@@ -29,7 +29,7 @@ export class MediaService implements OnModuleInit {
   async onModuleInit() { await mkdir(this.directory, { recursive: true, mode: 0o700 }); }
 
   private path(key: string) {
-    if (!/^[a-f0-9-]{36}\.webp$/.test(key)) throw new Error('Ungueltiger gespeicherter Bildschluessel.');
+    if (!/^[a-f0-9-]{36}\.webp$/.test(key)) throw new Error('Ungültiger gespeicherter Bildschlüssel.');
     return resolve(this.directory, key);
   }
 
@@ -84,12 +84,12 @@ export class MediaService implements OnModuleInit {
           select: { id: true, revision: true, sortOrder: true },
         });
         if (orderToken(ordered) !== input.token) {
-          throw new ConflictException('Die Kategorie wurde zwischenzeitlich geaendert. Bitte die Reihenfolge neu laden.');
+          throw new ConflictException('Die Kategorie wurde zwischenzeitlich geändert. Bitte die Reihenfolge neu laden.');
         }
         const index = ordered.findIndex(item => item.id === input.assetId);
         if (index < 0) throw new NotFoundException('Das Bild ist nicht in dieser Kategorie.');
         if (input.position > ordered.length) throw new BadRequestException('Die Zielposition liegt ausserhalb der Kategorie.');
-        if (ordered.length > 1000001) throw new BadRequestException('Die Kategorie ist fuer die automatische Sortierung zu gross.');
+        if (ordered.length > 1000001) throw new BadRequestException('Die Kategorie ist für die automatische Sortierung zu gross.');
         if (index !== input.position - 1) {
           await lockMedia(db, this.prisma.databaseSchema, ordered.map(item => item.id));
           const [asset] = ordered.splice(index, 1);
@@ -118,7 +118,7 @@ export class MediaService implements OnModuleInit {
       where: { category, parentId: null, status: 'PUBLISHED', id: { not: id } },
       orderBy: [...mediaOrderBy], select: { id: true, sortOrder: true },
     });
-    if (ordered.length > 1000000) throw new BadRequestException('Die Kategorie ist fuer die automatische Sortierung zu gross.');
+    if (ordered.length > 1000000) throw new BadRequestException('Die Kategorie ist für die automatische Sortierung zu gross.');
     await lockMedia(db, this.prisma.databaseSchema, [id, ...ordered.map(item => item.id)]);
     await this.saveRanks(db, ordered.map((item, index) => ({ ...item, position: index + 1 })));
   }
@@ -129,7 +129,7 @@ export class MediaService implements OnModuleInit {
       const cause = adapter && typeof adapter === 'object' && 'cause' in adapter ? adapter.cause : undefined;
       const code = cause && typeof cause === 'object' && 'originalCode' in cause ? cause.originalCode : error.meta?.['code'];
       if (error.code === 'P2034' || (error.code === 'P2010' && ['40001', '40P01'].includes(String(code)))) {
-        throw new ConflictException('Die Galerie wurde gleichzeitig geaendert. Bitte neu laden und erneut versuchen.');
+        throw new ConflictException('Die Galerie wurde gleichzeitig geändert. Bitte neu laden und erneut versuchen.');
       }
     }
     throw error;
@@ -153,7 +153,7 @@ export class MediaService implements OnModuleInit {
           asset.revision !== 0 || asset._count.reports || asset.category === 'TRAVEL' ||
           asset.category !== first.category || asset.title !== first.title || asset.altText !== first.altText ||
           asset.titleEn !== first.titleEn || asset.altTextEn !== first.altTextEn || asset.descriptionEn !== first.descriptionEn)) {
-          throw new ConflictException('Nur unveraenderte Entwuerfe derselben Galerie mit gemeinsamem Titel und Alternativtext koennen gruppiert werden.');
+          throw new ConflictException('Nur unveränderte Entwürfe derselben Galerie mit gemeinsamem Titel und Alternativtext können gruppiert werden.');
         }
         for (const [position, childId] of ids.slice(1).entries()) {
           await db.mediaAsset.update({ where: { id: childId }, data: { parentId: id, sortOrder: position, revision: { increment: 1 } } });
@@ -166,7 +166,7 @@ export class MediaService implements OnModuleInit {
 
   async appendPhotos(id: string, body: unknown) {
     const { ids, revision } = appendGroupInput(body);
-    if (ids.includes(id)) throw new BadRequestException('Das erste Foto der Gruppe darf nicht erneut hinzugefuegt werden.');
+    if (ids.includes(id)) throw new BadRequestException('Das erste Foto der Gruppe darf nicht erneut hinzugefügt werden.');
     try {
       return await this.prisma.$transaction(async db => {
         await lockMedia(db, this.prisma.databaseSchema, [id, ...ids]);
@@ -174,17 +174,17 @@ export class MediaService implements OnModuleInit {
           include: { children: { select: { id: true, sortOrder: true } } } });
         if (!group) throw new NotFoundException('Die Fotogruppe wurde nicht gefunden.');
         if (group.parentId || group.category === 'TRAVEL' || !group.children.length) {
-          throw new BadRequestException('Fotos koennen nur bestehenden Fotogruppen von Sammy oder Meine Kreationen hinzugefuegt werden.');
+          throw new BadRequestException('Fotos können nur bestehenden Fotogruppen von Sammy oder Meine Kreationen hinzugefügt werden.');
         }
         if (ids.every(photoId => group.children.some(child => child.id === photoId))) return { id };
-        if (group.revision !== revision) throw new ConflictException('Die Fotogruppe wurde inzwischen geaendert. Bitte die gespeicherte Fotogruppe neu laden und erneut versuchen.');
+        if (group.revision !== revision) throw new ConflictException('Die Fotogruppe wurde inzwischen geändert. Bitte die gespeicherte Fotogruppe neu laden und erneut versuchen.');
         if (group.children.length + 1 + ids.length > 100) throw new BadRequestException('Eine Fotogruppe darf insgesamt maximal 100 Fotos enthalten.');
         const photos = await db.mediaAsset.findMany({ where: { id: { in: ids } },
           include: { _count: { select: { children: true, reports: true } } } });
-        if (photos.length !== ids.length) throw new NotFoundException('Ein hinzuzufuegendes Foto wurde nicht gefunden.');
+        if (photos.length !== ids.length) throw new NotFoundException('Ein hinzuzufügendes Foto wurde nicht gefunden.');
         if (photos.some(photo => photo.parentId || photo._count.children || photo._count.reports ||
           photo.status !== 'DRAFT' || photo.revision !== 0 || photo.category !== group.category)) {
-          throw new ConflictException('Nur unveraenderte, unzugeordnete Foto-Entwuerfe derselben Kategorie koennen hinzugefuegt werden.');
+          throw new ConflictException('Nur unveränderte, unzugeordnete Foto-Entwürfe derselben Kategorie können hinzugefügt werden.');
         }
         const nextOrder = Math.max(...group.children.map(child => child.sortOrder)) + 1;
         for (const [position, photoId] of ids.entries()) {
@@ -209,7 +209,7 @@ export class MediaService implements OnModuleInit {
       if (!input.uploadKey) return null;
       const existing = await this.prisma.mediaAsset.findUnique({ where: { uploadKey: input.uploadKey } });
       if (!existing) return null;
-      if (existing.uploadFingerprint !== uploadFingerprint) throw new ConflictException('Dieser Upload-Schluessel wurde bereits fuer andere Bilddaten verwendet.');
+      if (existing.uploadFingerprint !== uploadFingerprint) throw new ConflictException('Dieser Upload-Schlüssel wurde bereits für andere Bilddaten verwendet.');
       return { id: existing.id };
     };
     const existing = await existingUpload();
@@ -243,11 +243,11 @@ export class MediaService implements OnModuleInit {
       await lockMedia(db, this.prisma.databaseSchema, [id]);
       const current = await db.mediaAsset.findUnique({ where: { id }, include: { _count: { select: { reports: true, children: true } } } });
       if (!current) throw new NotFoundException('Das Bild wurde nicht gefunden.');
-      if (current.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe bearbeiten.');
-      if (current.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (current.parentId) throw new ConflictException('Dieses Bild bitte über seine Fotogruppe bearbeiten.');
+      if (current.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geändert. Bitte neu laden.');
       if (current._count.children && data.category === 'TRAVEL') throw new BadRequestException('Fotogruppen sind nur bei Sammy und Meine Kreationen erlaubt.');
       if (current.category !== data.category && (current._count.reports || (current.status === 'PUBLISHED' && data.category === 'TRAVEL'))) {
-        throw new ConflictException('Vor dem Kategorie-Wechsel Berichtszuordnungen entfernen und Veroeffentlichung zuruecknehmen.');
+        throw new ConflictException('Vor dem Kategorie-Wechsel Berichtszuordnungen entfernen und Veröffentlichung zurücknehmen.');
       }
       const prepend = current.category !== data.category && current.status === 'PUBLISHED' && data.category !== 'TRAVEL';
       if (prepend) await this.prependPublished(db, id, galleryCategory(data.category));
@@ -263,9 +263,9 @@ export class MediaService implements OnModuleInit {
       await lockMedia(db, this.prisma.databaseSchema, [id]);
       const asset = await db.mediaAsset.findUnique({ where: { id } });
       if (!asset) throw new NotFoundException('Das Bild wurde nicht gefunden.');
-      if (asset.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe veroeffentlichen oder zuruecknehmen.');
-      if (asset.category === 'TRAVEL') throw new BadRequestException('Reisebilder werden ausschliesslich mit ihrem Reisebericht veroeffentlicht.');
-      if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (asset.parentId) throw new ConflictException('Dieses Bild bitte über seine Fotogruppe veröffentlichen oder zurücknehmen.');
+      if (asset.category === 'TRAVEL') throw new BadRequestException('Reisebilder werden ausschliesslich mit ihrem Reisebericht veröffentlicht.');
+      if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geändert. Bitte neu laden.');
       if (published && asset.status === 'DRAFT') {
         await this.prependPublished(db, id, asset.category);
         await db.mediaAsset.update({ where: { id }, data: { sortOrder: 0 } });
@@ -283,18 +283,18 @@ export class MediaService implements OnModuleInit {
       await lockMedia(db, this.prisma.databaseSchema, [id]);
       const asset = await db.mediaAsset.findUnique({ where: { id }, include: { children: { select: { storageKey: true } }, _count: { select: { reports: true } } } });
       if (!asset) throw new NotFoundException('Das Bild wurde nicht gefunden.');
-      if (asset.parentId) throw new ConflictException('Dieses Bild bitte ueber seine Fotogruppe loeschen.');
-      if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (asset.parentId) throw new ConflictException('Dieses Bild bitte über seine Fotogruppe löschen.');
+      if (asset.revision !== revision) throw new ConflictException('Das Bild wurde zwischenzeitlich geändert. Bitte neu laden.');
       if (asset.status !== 'DRAFT' || asset._count.reports) {
-        throw new ConflictException('Vor dem Loeschen Veroeffentlichung zuruecknehmen und Berichtszuordnungen entfernen.');
+        throw new ConflictException('Vor dem Löschen Veröffentlichung zurücknehmen und Berichtszuordnungen entfernen.');
       }
       const result = await db.mediaAsset.deleteMany({ where: { id, revision, status: 'DRAFT', reports: { none: {} } } });
-      if (!result.count) throw new ConflictException('Das Bild wurde zwischenzeitlich geaendert. Bitte neu laden.');
+      if (!result.count) throw new ConflictException('Das Bild wurde zwischenzeitlich geändert. Bitte neu laden.');
       return [asset.storageKey, ...asset.children.map(child => child.storageKey)];
     }).catch(error => this.transactionError(error));
     try { await Promise.all(removed.map(key => unlink(this.path(key)))); }
     catch (error) {
-      this.logger.error(`Bild ${id} ist aus der Datenbank entfernt, die Datei konnte nicht geloescht werden.`, error);
+      this.logger.error(`Bild ${id} ist aus der Datenbank entfernt, die Datei konnte nicht gelöscht werden.`, error);
       throw error;
     }
     return { deleted: true };
@@ -304,7 +304,7 @@ export class MediaService implements OnModuleInit {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, ...(publicOnly ? { status: 'PUBLISHED' as const, category: { in: ['DRAWING', 'SAMMY'] as ('DRAWING' | 'SAMMY')[] } } : {}) }, select: { storageKey: true },
     });
-    if (!asset) throw new NotFoundException('Das Bild ist nicht verfuegbar.');
+    if (!asset) throw new NotFoundException('Das Bild ist nicht verfügbar.');
     return readFile(this.path(asset.storageKey));
   }
 
@@ -313,7 +313,7 @@ export class MediaService implements OnModuleInit {
       where: { id, category: 'TRAVEL', reports: { some: { report: { slug, status: 'PUBLISHED' }, page: { status: 'PUBLISHED' } } } },
       select: { storageKey: true },
     });
-    if (!asset) throw new NotFoundException('Das Bild ist in diesem Bericht nicht verfuegbar.');
+    if (!asset) throw new NotFoundException('Das Bild ist in diesem Bericht nicht verfügbar.');
     return readFile(this.path(asset.storageKey));
   }
 }

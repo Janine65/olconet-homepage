@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 
-test('liveness bleibt verfuegbar, readiness meldet fehlende Datenbank mit HTTP 503', async (t) => {
+test('liveness bleibt verfügbar, readiness meldet fehlende Datenbank mit HTTP 503', async (t) => {
   const previous = process.env['DATABASE_URL'];
   process.env['DATABASE_URL'] = 'postgresql://localhost:1/olconet';
   const app = await NestFactory.create(AppModule, { logger: false });
@@ -31,6 +31,6 @@ test('liveness bleibt verfuegbar, readiness meldet fehlende Datenbank mit HTTP 5
   assert.equal(protectedRequest.status, 503);
   assert.deepEqual(await protectedRequest.json(), {
     statusCode: 503,
-    message: 'Der Dienst ist voruebergehend nicht verfuegbar.',
+    message: 'Der Dienst ist vorübergehend nicht verfügbar.',
   });
 });

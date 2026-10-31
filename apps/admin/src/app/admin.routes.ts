@@ -14,7 +14,7 @@ const reports = () => import('./reports.component').then(module => module.Report
 
 export const adminRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'uebersicht' },
-  { path: 'uebersicht', title: 'Uebersicht | olconet Verwaltung',
+  { path: 'uebersicht', title: 'Übersicht | olconet Verwaltung',
     loadComponent: () => import('./overview.component').then(module => module.OverviewComponent) },
   { path: 'system', title: 'Systeminfo | olconet Verwaltung',
     loadComponent: () => import('./system.component').then(module => module.SystemComponent) },

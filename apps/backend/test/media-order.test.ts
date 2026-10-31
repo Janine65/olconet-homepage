@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { moveInput, orderToken } from '../src/media/media.order';
 
-test('Kategorie-Sortierung verlangt gueltige ID, Position und aktuellen Token', () => {
+test('Kategorie-Sortierung verlangt gültige ID, Position und aktuellen Token', () => {
   const id = '11111111-1111-4111-8111-111111111111';
   const token = orderToken([{ id, revision: 1 }]);
   const input = { category: 'SAMMY', assetId: id, position: 1, token };

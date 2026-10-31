@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) => {
   const databaseUrl = process.env['TEST_DATABASE_URL'];
   assert.ok(databaseUrl && process.env['OLCONET_ISOLATED_TEST'] === '1',
-    'Nur ueber pnpm test:integration im Projektwurzelverzeichnis ausfuehren.');
+    'Nur über pnpm test:integration im Projektwurzelverzeichnis ausführen.');
   assert.equal(new URL(databaseUrl).pathname, '/olconet_test');
   assert.equal(new URL(databaseUrl).searchParams.get('schema'), 'webpage');
   process.env['DATABASE_URL'] = databaseUrl;
@@ -59,7 +59,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.equal(result.status, 0, result.stderr + result.stdout);
   });
 
-  await t.test('Ohne Sitzung sind private Endpunkte gesperrt; Health bleibt oeffentlich', async () => {
+  await t.test('Ohne Sitzung sind private Endpunkte gesperrt; Health bleibt öffentlich', async () => {
     for (const path of ['/api/auth/me', '/api/admin/overview', '/api/admin/system']) {
       assert.equal((await fetch(`${base}${path}`)).status, 401);
     }
@@ -69,7 +69,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.equal((await fetch(`${base}/api/auth/register`, { method: 'POST', headers, body: '{}' })).status, 404);
   });
 
-  await t.test('CSRF-Schutz, Input-Validierung und Anfragegroessen werden durchgesetzt', async () => {
+  await t.test('CSRF-Schutz, Input-Validierung und Anfragegrössen werden durchgesetzt', async () => {
     assert.equal((await login(first.email, password, { Origin: 'https://foreign.example' })).status, 403);
     assert.equal((await login(first.email, password, { 'X-Olconet-Request': '' })).status, 403);
     const noOrigin = await fetch(`${base}/api/auth/login`, {
@@ -86,7 +86,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.equal(huge.status, 413);
   });
 
-  await t.test('Unbekannte Konten und falsche Passwoerter liefern dieselbe Fehlermeldung', async () => {
+  await t.test('Unbekannte Konten und falsche Passwörter liefern dieselbe Fehlermeldung', async () => {
     const wrong = await login(first.email, 'wrong');
     const missing = await login('missing@example.com');
     assert.equal(wrong.status, 401);
@@ -115,7 +115,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.ok(stored.expiresAt.getTime() > Date.now() + 28700 * 1000);
   });
 
-  await t.test('Geschuetzte Uebersicht und Sitzungswiederherstellung funktionieren', async () => {
+  await t.test('Geschützte Übersicht und Sitzungswiederherstellung funktionieren', async () => {
     const me = await fetch(`${base}/api/auth/me`, { headers: { Cookie: cookie } });
     assert.equal(me.status, 200);
     assert.equal((await me.json()).user.email, first.email);
@@ -146,7 +146,7 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Cookie: 'olconet_session=forged' } })).status, 401);
   });
 
-  await t.test('Sitzungen ueberleben Backend-Neustarts', async () => {
+  await t.test('Sitzungen überleben Backend-Neustarts', async () => {
     const restarted = await NestFactory.create<NestExpressApplication>(AppModule, { logger: false, bodyParser: false });
     configureHttp(restarted);
     await restarted.listen(0, '127.0.0.1');

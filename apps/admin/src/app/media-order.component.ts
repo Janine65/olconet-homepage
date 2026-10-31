@@ -11,10 +11,10 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
   template: `
     <section class="media-order">
       <h3>Reihenfolge: {{ category === 'SAMMY' ? 'Sammy' : 'Meine Kreationen' }}</h3>
-      <p>Bilder oder ganze Fotogruppen am Griff ziehen oder mit Vor/Zurueck verschieben. Fuer Spruenge ueber Seiten hinweg
-        eine Zielposition eingeben. Jede Verschiebung wird sofort gespeichert, auch fuer die Homepage.
-        Entwuerfe werden mitsortiert, bleiben aber privat. Neue Veroeffentlichungen werden auf der Homepage
-        automatisch vorne eingeordnet; die Reihenfolge der bisherigen Eintraege bleibt erhalten.</p>
+      <p>Bilder oder ganze Fotogruppen am Griff ziehen oder mit Vor/Zurück verschieben. Für Sprünge über Seiten hinweg
+        eine Zielposition eingeben. Jede Verschiebung wird sofort gespeichert, auch für die Homepage.
+        Entwürfe werden mitsortiert, bleiben aber privat. Neue Veröffentlichungen werden auf der Homepage
+        automatisch vorne eingeordnet; die Reihenfolge der bisherigen Einträge bleibt erhalten.</p>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       @if (message()) { <p class="success" role="status">{{ message() }}</p> }
       @if (busy()) { <p role="status">Reihenfolge wird geladen oder gespeichert ...</p> }
@@ -28,16 +28,16 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
               <button type="button" class="drag-handle secondary" cdkDragHandle
                 [disabled]="busy() || disabled" [attr.aria-label]="'Bild ' + (item.title || item.position) + ' ziehen'">Ziehen</button>
               <img [src]="'/api/admin/media/' + item.id + '/image'" [alt]="item.altText" loading="lazy"
-                (error)="error.set('Eine Bildvorschau fehlt. Bitte Upload-Speicher pruefen.')">
+                (error)="error.set('Eine Bildvorschau fehlt. Bitte Upload-Speicher prüfen.')">
               <div>
                 <strong>{{ item.position }}. {{ item.title || 'Bild ohne Bildunterschrift' }}</strong>
                 @if (item._count.children) { <p>Fotogruppe · {{ item._count.children + 1 }} Fotos</p> }
-                <p>{{ item.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }}</p>
+                <p>{{ item.status === 'PUBLISHED' ? 'Veröffentlicht' : 'Entwurf' }}</p>
                 <div class="sort-actions">
                   <button type="button" (click)="move(item, item.position - 1)" [disabled]="busy() || disabled || item.position <= 1"
                     [attr.aria-label]="'Bild ' + (item.title || item.position) + ' nach vorne'">Vor</button>
                   <button type="button" (click)="move(item, item.position + 1)" [disabled]="busy() || disabled || item.position >= data.total"
-                    [attr.aria-label]="'Bild ' + (item.title || item.position) + ' nach hinten'">Zurueck</button>
+                    [attr.aria-label]="'Bild ' + (item.title || item.position) + ' nach hinten'">Zurück</button>
                   <label [for]="'position-' + item.id">Zielposition</label>
                   <input [id]="'position-' + item.id" type="number" min="1" [max]="data.total"
                     [ngModel]="targets[item.id] ?? item.position" (ngModelChange)="targets[item.id] = $event"
@@ -52,7 +52,7 @@ interface OrderPage { items: OrderItem[]; total: number; page: number; pageSize:
         <div class="actions">
           <button type="button" (click)="reload(page - 1)" [disabled]="busy() || disabled || page <= 1">Vorherige Sortierseite</button>
           <span>Seite {{ data.page }} · {{ data.total }} Bilder / Fotogruppen insgesamt</span>
-          <button type="button" (click)="reload(page + 1)" [disabled]="busy() || disabled || page * 20 >= data.total">Naechste Sortierseite</button>
+          <button type="button" (click)="reload(page + 1)" [disabled]="busy() || disabled || page * 20 >= data.total">Nächste Sortierseite</button>
         </div>
       }
     </section>

@@ -20,7 +20,7 @@ if (output) {
         data.enabled ? '' : t(' (Erfassung deaktiviert)', ' (counting disabled)')}`;
     } catch (error) {
       console.error('Visitor counter unavailable:', error);
-      output.textContent = ` \u00b7 ${t('Besucherzaehler nicht verfuegbar', 'Visitor counter unavailable')}`;
+      output.textContent = ` \u00b7 ${t('Besucherzähler nicht verfügbar', 'Visitor counter unavailable')}`;
     }
   })();
 }

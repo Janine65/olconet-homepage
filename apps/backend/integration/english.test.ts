@@ -10,7 +10,7 @@ import { configureHttp } from '../src/http';
 import { PrismaService } from '../src/prisma.service';
 import { hashPassword } from '../src/auth/password';
 
-test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async t => {
+test('Englische Inhalte, sichere Veröffentlichung und deutscher Ersatz', async t => {
   assert.equal(process.env['OLCONET_ISOLATED_TEST'], '1');
   const url = process.env['TEST_DATABASE_URL'];
   assert.ok(url && process.env['UPLOAD_DIR']);
@@ -70,7 +70,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
   ];
   let report: { id: string; version: number };
 
-  await t.test('Uebersetzungen werden gespeichert, Entwuerfe bleiben in beiden Sprachen privat', async () => {
+  await t.test('Übersetzungen werden gespeichert, Entwürfe bleiben in beiden Sprachen privat', async () => {
     const response = await post('/api/admin/reports', { ...metadata, pages });
     assert.equal(response.status, 201); report = await response.json();
     assert.equal((await get('/api/public/reports/english-test?lang=en')).status, 404);
@@ -85,7 +85,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
       assert.equal(response.status, 201); report = await response.json();
     }
   });
-  await t.test('Public-API, RSS und Bilder liefern Uebersetzungen mit feldweisem Ersatz ohne Entwurfslecks', async () => {
+  await t.test('Public-API, RSS und Bilder liefern Übersetzungen mit feldweisem Ersatz ohne Entwurfslecks', async () => {
     const english = await (await get('/api/public/reports/english-test?lang=en')).json();
     assert.equal(english.title, 'Trip'); assert.equal(english.destination, 'Switzerland');
     assert.equal(english.excerpt, metadata.excerpt); assert.equal(english.pages.length, 2);
@@ -111,7 +111,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
       assert.equal((await get(endpoint + '?lang=fr')).status, 400);
     }
   });
-  await t.test('Alte Speicheranfragen erhalten vorhandene Uebersetzungen und englische Bildzuordnungen', async () => {
+  await t.test('Alte Speicheranfragen erhalten vorhandene Übersetzungen und englische Bildzuordnungen', async () => {
     const { titleEn: _title, excerptEn: _excerpt, destinationEn: _destination, ...oldMetadata } = metadata;
     const oldPages = pages.map(({ titleEn: _title, contentHtmlEn: _content, galleryImages, ...page }) => ({
       ...page, galleryImages: galleryImages.map(({ captionEn: _caption, ...image }) => image),
@@ -123,7 +123,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
     assert.equal(english.pages[1].images[0].caption, 'English caption');
     assert.equal((await get(`/api/public/reports/english-test/images/${assets[2]}`)).status, 200);
   });
-  await t.test('Bewusst geleerte Uebersetzungen aktivieren den Ersatz und entfernen englische Bildzuordnungen', async () => {
+  await t.test('Bewusst geleerte Übersetzungen aktivieren den Ersatz und entfernen englische Bildzuordnungen', async () => {
     const response = await post(`/api/admin/reports/${report.id}/save`, {
       ...metadata, titleEn: '', pages: pages.map(page => ({
         ...page, titleEn: '', contentHtmlEn: '<p></p>', galleryImages: page.galleryImages.map(image => ({ ...image, captionEn: '' })),
@@ -136,7 +136,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
     assert.equal(english.pages[1].images[0].caption, 'Deutsche Unterschrift');
     assert.equal((await get(`/api/public/reports/english-test/images/${assets[2]}`)).status, 404);
   });
-  await t.test('Bilinguale Texte ueber 128 KiB funktionieren, ungueltige englische Bilder rollen die Speicherung zurueck', async () => {
+  await t.test('Bilinguale Texte über 128 KiB funktionieren, ungültige englische Bilder rollen die Speicherung zurück', async () => {
     const large = pages.map((page, index) => index ? page : { ...page, contentHtml: 'd'.repeat(80000), contentHtmlEn: 'e'.repeat(80000) });
     let response = await post(`/api/admin/reports/${report.id}/save`, { ...metadata, pages: large, version: report.version });
     assert.equal(response.status, 201); report = await response.json();
@@ -159,7 +159,7 @@ test('Englische Inhalte, sichere Veroeffentlichung und deutscher Ersatz', async 
       headers: { Origin: headers.Origin, 'X-Olconet-Request': '1', Cookie: cookie }, body: form });
     assert.equal(response.status, 201); assets.push((await response.json()).id);
   });
-  await t.test('Fotogruppen bearbeiten und veroeffentlichen englische Angaben gemeinsam; alte Clients loeschen sie nicht', async () => {
+  await t.test('Fotogruppen bearbeiten und veröffentlichen englische Angaben gemeinsam; alte Clients löschen sie nicht', async () => {
     assert.equal((await post('/api/admin/media/group', { ids: assets.slice(0, 2) })).status, 201);
     const id = assets[0]!;
     let asset = await (await get(`/api/admin/media/${id}`, true)).json();

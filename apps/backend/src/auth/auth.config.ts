@@ -6,14 +6,14 @@ export function readAuthConfig(env: NodeJS.ProcessEnv) {
   try {
     url = new URL(origin);
   } catch {
-    throw new ConfigurationError('ADMIN_ORIGIN muss eine gueltige Origin sein.');
+    throw new ConfigurationError('ADMIN_ORIGIN muss eine gültige Origin sein.');
   }
   if (url.origin !== origin || url.username || url.password) {
     throw new ConfigurationError('ADMIN_ORIGIN muss ohne Pfad, Zugangsdaten oder abschliessenden Slash angegeben werden.');
   }
   const localHttp = url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if (url.protocol !== 'https:' && !localHttp) {
-    throw new ConfigurationError('ADMIN_ORIGIN benoetigt HTTPS; HTTP ist nur fuer localhost erlaubt.');
+    throw new ConfigurationError('ADMIN_ORIGIN benötigt HTTPS; HTTP ist nur für localhost erlaubt.');
   }
   const secure = url.protocol === 'https:';
   return { origin, secure };

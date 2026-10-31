@@ -31,7 +31,7 @@ test('Anmeldedaten werden begrenzt, Kontoadressen normalisiert und unbekannte Fe
   assert.throws(() => validatePassword('\u00e4'.repeat(65)));
 });
 
-test('Passwort-Hashes sind gesalzen, pruefbar und Klartext wird nicht gespeichert', async () => {
+test('Passwort-Hashes sind gesalzen, prüfbar und Klartext wird nicht gespeichert', async () => {
   const password = 'Long-test-password!';
   const a = await hashPassword(password);
   const b = await hashPassword(password);

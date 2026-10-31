@@ -15,7 +15,7 @@ import { hashPassword } from '../src/auth/password';
 interface PageInput { id: string; title: string; contentHtml: string; galleryImages: { assetId: string; caption: string }[]; }
 interface Report { id: string; version: number; status: string; pages: { id: string; title: string; status: string }[]; }
 
-test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t => {
+test('Mehrseitige Reiseberichte mit einzeln veröffentlichten Seiten', async t => {
   assert.equal(process.env['OLCONET_ISOLATED_TEST'], '1');
   const url = process.env['TEST_DATABASE_URL'];
   assert.ok(url && process.env['UPLOAD_DIR']);
@@ -70,7 +70,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
   const save = () => post(`/api/admin/reports/${report.id}/save`, { ...metadata, pages, version: report.version });
   const refresh = async () => { report = await (await get(`/api/admin/reports/${report.id}`, true)).json(); };
 
-  await t.test('Migration bewahrt bestehende Texte, Bildzuordnungen und Veroeffentlichungszustaende als erste Seite', async () => {
+  await t.test('Migration bewahrt bestehende Texte, Bildzuordnungen und Veröffentlichungszustände als erste Seite', async () => {
     const schema = `pages_migration_${randomUUID().replaceAll('-', '')}`;
     const migration = await readFile(resolve('prisma/migrations/20261016150000_report_pages/migration.sql'), 'utf8');
     await db.$transaction(async tx => {
@@ -97,7 +97,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     });
   });
 
-  await t.test('Mehrere Seiten werden privat angelegt, Bildzuordnungen gelten fuer die jeweilige Seite', async () => {
+  await t.test('Mehrere Seiten werden privat angelegt, Bildzuordnungen gelten für die jeweilige Seite', async () => {
     const response = await post('/api/admin/reports', { ...metadata, pages });
     assert.equal(response.status, 201); report = await response.json();
     assert.equal(report.status, 'DRAFT'); assert.equal(report.pages.length, 3);
@@ -120,7 +120,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     assert.equal((await image(2)).status, 404); assert.equal((await image(3)).status, 404);
     assert.match(await (await get('/api/public/reports/rss')).text(), /mehrseitige-reise/);
   });
-  await t.test('Fotoseiten koennen einzeln veroeffentlicht und Seiten ohne unbeabsichtigte Freigabe umsortiert werden', async () => {
+  await t.test('Fotoseiten können einzeln veröffentlicht und Seiten ohne unbeabsichtigte Freigabe umsortiert werden', async () => {
     assert.equal((await status(photos.id, true)).status, 201); await refresh();
     const extra = page('Neuer privater Entwurf', '<p>Neu</p>', []);
     pages = [photos, draft, first, extra];
@@ -131,7 +131,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     assert.equal(body.contentHtml, '');
     assert.equal((await image(3)).status, 200); assert.equal((await image(2)).status, 404);
   });
-  await t.test('Fotos folgen der aufsteigenden Seitenreihenfolge, nicht dem Upload- oder Veroeffentlichungsdatum', async () => {
+  await t.test('Fotos folgen der aufsteigenden Seitenreihenfolge, nicht dem Upload- oder Veröffentlichungsdatum', async () => {
     const original = pages;
     pages = pages.map(item => item.id === photos.id ? {
       ...item, galleryImages: [assets[3]!, assets[1]!].map(assetId => ({ assetId, caption: 'Foto' })),
@@ -145,7 +145,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     pages = original;
     assert.equal((await save()).status, 201); await refresh();
   });
-  await t.test('Falsche Kategorien, fremde Seiten-IDs, alte Clients und veraltete Versionen koennen keine Seiten ueberschreiben', async () => {
+  await t.test('Falsche Kategorien, fremde Seiten-IDs, alte Clients und veraltete Versionen können keine Seiten überschreiben', async () => {
     const oldVersion = report.version;
     assert.equal((await post(`/api/admin/reports/${report.id}/save`, { ...metadata, contentHtml: '<p>Alt</p>', version: report.version })).status, 409);
     const bad = [...pages, page('Fehler', '', [randomUUID()])];
@@ -163,7 +163,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     assert.deepEqual(concurrent.map(response => response.status).sort(), [201, 409]);
     await refresh();
   });
-  await t.test('Ruecknahme sperrt eigene Bilder sofort; letzte veroeffentlichte Seite entfernt Bericht und RSS-Eintrag', async () => {
+  await t.test('Rücknahme sperrt eigene Bilder sofort; letzte veröffentlichte Seite entfernt Bericht und RSS-Eintrag', async () => {
     assert.equal((await status(first.id, false)).status, 201); await refresh();
     assert.equal((await image(0)).status, 404); assert.equal((await image(1)).status, 404);
     assert.equal((await image(3)).status, 200);
@@ -173,7 +173,7 @@ test('Mehrseitige Reiseberichte mit einzeln veroeffentlichten Seiten', async t =
     assert.doesNotMatch(await (await get('/api/public/reports/rss')).text(), /mehrseitige-reise/);
     assert.equal((await image(3)).status, 404);
   });
-  await t.test('Geloeschte veroeffentlichte Seiten und alle Seiten zuruecknehmen aktualisieren Sichtbarkeit atomar', async () => {
+  await t.test('Gelöschte veröffentlichte Seiten und alle Seiten zurücknehmen aktualisieren Sichtbarkeit atomar', async () => {
     assert.equal((await status(first.id, true)).status, 201); await refresh();
     pages = pages.filter(page => page.id !== first.id);
     assert.equal((await save()).status, 201); await refresh();

@@ -19,21 +19,21 @@ interface QueueEntry {
   selector: 'app-upload-queue', standalone: true, imports: [FormsModule],
   template: `
     <div class="upload-queue">
-      <h3>{{ appendTo ? 'Fotos zur Fotogruppe hinzufuegen' : group ? 'Multi-Fotogruppe hochladen' : 'Mehrere Bilder hochladen' }}</h3>
-      <p>Bis zu {{ capacity() }} Dateien auswaehlen. {{ appendTo ? 'Neue Fotos werden hinten an die bestehende Gruppe angehaengt.' : group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamer optionaler Bildunterschrift.' : 'Bei Bedarf eine Bildunterschrift je Bild ergaenzen.' }} Dann Warteschlange starten.
-        Jede Datei wird einzeln geprueft (maximal 10 MiB). Erfolgreiche Uploads bleiben bei einem Fehler erhalten.</p>
-      <p class="hint">Die Bildunterschrift wird unter dem Foto angezeigt und automatisch als Alternativtext fuer Screenreader verwendet. Ohne Bildunterschrift bleiben beide Angaben leer.</p>
+      <h3>{{ appendTo ? 'Fotos zur Fotogruppe hinzufügen' : group ? 'Multi-Fotogruppe hochladen' : 'Mehrere Bilder hochladen' }}</h3>
+      <p>Bis zu {{ capacity() }} Dateien auswählen. {{ appendTo ? 'Neue Fotos werden hinten an die bestehende Gruppe angehängt.' : group ? '2 bis 100 Fotos bilden eine Gruppe mit gemeinsamer optionaler Bildunterschrift.' : 'Bei Bedarf eine Bildunterschrift je Bild ergänzen.' }} Dann Warteschlange starten.
+        Jede Datei wird einzeln geprüft (maximal 10 MiB). Erfolgreiche Uploads bleiben bei einem Fehler erhalten.</p>
+      <p class="hint">Die Bildunterschrift wird unter dem Foto angezeigt und automatisch als Alternativtext für Screenreader verwendet. Ohne Bildunterschrift bleiben beide Angaben leer.</p>
       @if (group) {
         @if (appendTo) {
-        <p class="hint">Titel, Alternativtext und Beschreibungen einschliesslich englischer Uebersetzungen werden von der gespeicherten Gruppe uebernommen.
-          {{ appendTo.status === 'PUBLISHED' ? 'Die neuen Fotos werden nach dem Hinzufuegen sofort oeffentlich sichtbar.' : 'Die neuen Fotos bleiben mit der Gruppe privat.' }}</p>
+        <p class="hint">Titel, Alternativtext und Beschreibungen einschliesslich englischer Übersetzungen werden von der gespeicherten Gruppe übernommen.
+          {{ appendTo.status === 'PUBLISHED' ? 'Die neuen Fotos werden nach dem Hinzufügen sofort öffentlich sichtbar.' : 'Die neuen Fotos bleiben mit der Gruppe privat.' }}</p>
         } @else {
         <label>Gemeinsame Bildunterschrift (optional) <input [(ngModel)]="groupTitle" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
         <label>Gemeinsame Bildunterschrift (Englisch, optional) <input lang="en" [(ngModel)]="groupTitleEn" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="locked() || disabled"></label>
         <p class="hint">Die Gruppe wird nach allen erfolgreichen Uploads gespeichert. Bei Fehlern bitte erneut versuchen.
-          Noch nicht gruppierte Uploads bleiben als private Einzelentwuerfe in der Bildliste erhalten.</p>
+          Noch nicht gruppierte Uploads bleiben als private Einzelentwürfe in der Bildliste erhalten.</p>
         }
-        @if (groupSaved()) { <p class="success" role="status">{{ appendTo ? 'Fotos zur Fotogruppe hinzugefuegt.' : 'Fotogruppe gespeichert. Sie kann in der Bildliste gemeinsam bearbeitet und veroeffentlicht werden.' }}</p> }
+        @if (groupSaved()) { <p class="success" role="status">{{ appendTo ? 'Fotos zur Fotogruppe hinzugefügt.' : 'Fotogruppe gespeichert. Sie kann in der Bildliste gemeinsam bearbeitet und veröffentlicht werden.' }}</p> }
       }
       <label [for]="inputId">Bilddateien</label>
       <input [id]="inputId" type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="add($event)" [disabled]="running() || disabled || (group && groupingStarted())">
@@ -47,7 +47,7 @@ interface QueueEntry {
                 <img class="report-image-preview" [src]="entry.assetId ? '/api/admin/media/' + entry.assetId + '/image' : entry.previewUrl"
                   [alt]="'Vorschau: ' + entry.name" (error)="entry.previewError = true">
               }
-              @if (entry.previewError) { <p class="error" role="alert">Die Vorschau fuer {{ entry.name }} konnte nicht geladen werden.</p> }
+              @if (entry.previewError) { <p class="error" role="alert">Die Vorschau für {{ entry.name }} konnte nicht geladen werden.</p> }
             }
             @if (!group) {
             <label>Bildunterschrift (optional) <input [(ngModel)]="entry.title" [ngModelOptions]="{standalone:true}" maxlength="200" [disabled]="entry.attempted || running() || disabled"></label>
@@ -58,7 +58,7 @@ interface QueueEntry {
               </select></label>
             }
             }
-            <p role="status">{{ entry.state === 'done' ? 'Gespeichert' : entry.state === 'failed' ? 'Fehlgeschlagen' : entry.state === 'uploading' ? (entry.progress === 100 ? 'Bild wird verarbeitet ...' : 'Upload laeuft ...') : 'Wartet' }}</p>
+            <p role="status">{{ entry.state === 'done' ? 'Gespeichert' : entry.state === 'failed' ? 'Fehlgeschlagen' : entry.state === 'uploading' ? (entry.progress === 100 ? 'Bild wird verarbeitet ...' : 'Upload läuft ...') : 'Wartet' }}</p>
             <progress [value]="entry.progress" max="100" [attr.aria-label]="'Upload ' + entry.name"></progress> {{ entry.progress }} %
             @if (entry.error) { <p class="error" role="alert">{{ entry.error }}</p> }
             @if (entry.state === 'failed') {
@@ -71,10 +71,10 @@ interface QueueEntry {
       <div class="actions">
         <button type="button" (click)="start()" [disabled]="running() || disabled || (!waiting() && !(group && entries().length && !groupSaved()))">Warteschlange starten / fortsetzen</button>
         @if (running()) { <button type="button" (click)="pause()">Nach aktuellem Bild pausieren</button> }
-        <button type="button" class="secondary" (click)="clearDone()" [disabled]="running() || disabled || (group && !groupSaved())">Erledigte Eintraege entfernen</button>
+        <button type="button" class="secondary" (click)="clearDone()" [disabled]="running() || disabled || (group && !groupSaved())">Erledigte Einträge entfernen</button>
       </div>
-      <p class="hint">Nach einem begonnenen Upload bleiben Angaben fuer sichere Wiederholungen gesperrt.
-        Zum Korrigieren einen fehlgeschlagenen Eintrag entfernen und die Datei erneut auswaehlen.
+      <p class="hint">Nach einem begonnenen Upload bleiben Angaben für sichere Wiederholungen gesperrt.
+        Zum Korrigieren einen fehlgeschlagenen Eintrag entfernen und die Datei erneut auswählen.
         Die Warteschlange bleibt nur in diesem Browser-Tab erhalten.</p>
     </div>
   `,
@@ -117,8 +117,8 @@ export class UploadQueueComponent implements OnDestroy {
     this.error.set('');
     if (this.group && this.groupingStarted()) return;
     if (this.entries().length + files.length > this.capacity()) {
-      this.error.set(this.appendTo ? `Es koennen noch maximal ${this.capacity()} Fotos zur Gruppe hinzugefuegt werden.` :
-        'Maximal 100 Eintraege pro Warteschlange. Bitte erledigte Eintraege entfernen.');
+      this.error.set(this.appendTo ? `Es können noch maximal ${this.capacity()} Fotos zur Gruppe hinzugefügt werden.` :
+        'Maximal 100 Einträge pro Warteschlange. Bitte erledigte Einträge entfernen.');
       return;
     }
     this.entries.update(entries => [...entries, ...files.map(file => ({
@@ -167,12 +167,12 @@ export class UploadQueueComponent implements OnDestroy {
         metadata.title.trim().length > 200 ||
         metadata.altText.trim().length > 500 ||
         (metadata.titleEn ?? '').trim().length > 200 || (metadata.altTextEn ?? '').trim().length > 500) {
-        this.error.set('Bitte Fotos und gueltige gemeinsame Angaben fuer Sammy oder Meine Kreationen angeben (neue Gruppe: mindestens 2 Fotos).');
+        this.error.set('Bitte Fotos und gültige gemeinsame Angaben für Sammy oder Meine Kreationen angeben (neue Gruppe: mindestens 2 Fotos).');
         return;
       }
       const target = this.appendTo;
       if (target && this.entries().filter(entry => !target.children.some(photo => photo.id === entry.assetId)).length > this.capacity()) {
-        this.error.set('Die Fotogruppe darf insgesamt maximal 100 Fotos enthalten. Bitte ueberzaehlige Warteschlangeneintraege entfernen.');
+        this.error.set('Die Fotogruppe darf insgesamt maximal 100 Fotos enthalten. Bitte überzählige Warteschlangeneinträge entfernen.');
         return;
       }
       for (const entry of this.entries()) {
@@ -195,7 +195,7 @@ export class UploadQueueComponent implements OnDestroy {
         }
         if (entry.title.trim().length > 200 || entry.altText.trim().length > 500 ||
           entry.titleEn.trim().length > 200 || entry.altTextEn.trim().length > 500) {
-          entry.state = 'failed'; entry.error = 'Bildunterschriften duerfen maximal 200 Zeichen enthalten; Alternativtexte maximal 500.';
+          entry.state = 'failed'; entry.error = 'Bildunterschriften dürfen maximal 200 Zeichen enthalten; Alternativtexte maximal 500.';
           this.refresh(); continue;
         }
         if (!entry.file.size || entry.file.size > 10 * 1024 * 1024) {

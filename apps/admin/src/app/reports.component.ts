@@ -97,7 +97,7 @@ export class ReportsComponent implements OnInit {
   canLeave() {
     if (this.queue && !this.queue.canLeave()) return false;
     if (this.busy()) { this.error.set('Bitte die laufende Berichts-Anfrage abwarten.'); return false; }
-    return !this.dirty() || window.confirm('Ungespeicherte Aenderungen verwerfen?');
+    return !this.dirty() || window.confirm('Ungespeicherte Änderungen verwerfen?');
   }
 
   touch() { this.dirty.set(true); this.message.set(''); }
@@ -169,7 +169,7 @@ export class ReportsComponent implements OnInit {
         { ...this.form, ...(current ? { version: current.version } : {}) },
       );
       this.accept(report);
-      this.message.set(report.status === 'PUBLISHED' ? 'Gespeichert. Die Aenderungen sind jetzt oeffentlich.' : 'Entwurf gespeichert.');
+      this.message.set(report.status === 'PUBLISHED' ? 'Gespeichert. Die Änderungen sind jetzt öffentlich.' : 'Entwurf gespeichert.');
       this.changed.emit();
     } catch (error) { this.showError(error); }
     finally { this.busy.set(false); }
@@ -182,8 +182,8 @@ export class ReportsComponent implements OnInit {
   async changeStatus(publish: boolean) {
     const current = this.current();
     if (!current || this.busy() || this.dirty() || this.queue?.running()) return;
-    if (!window.confirm(publish ? 'Diesen Bericht auf der Homepage und im RSS-Feed veroeffentlichen?' :
-      'Alle Seiten zuruecknehmen? Der ganze Bericht verschwindet von der Homepage und aus dem RSS-Feed.')) return;
+    if (!window.confirm(publish ? 'Diesen Bericht auf der Homepage und im RSS-Feed veröffentlichen?' :
+      'Alle Seiten zurücknehmen? Der ganze Bericht verschwindet von der Homepage und aus dem RSS-Feed.')) return;
     this.busy.set(true);
     this.error.set('');
     this.message.set('');
@@ -191,7 +191,7 @@ export class ReportsComponent implements OnInit {
       this.accept(await this.auth.request<Report>(
         `/api/admin/reports/${current.id}/${publish ? 'publish' : 'unpublish'}`, { version: current.version },
       ));
-      this.message.set(publish ? 'Bericht veroeffentlicht.' : 'Veroeffentlichung zurueckgenommen.');
+      this.message.set(publish ? 'Bericht veröffentlicht.' : 'Veröffentlichung zurückgenommen.');
       this.changed.emit();
     } catch (error) { this.showError(error); }
     finally { this.busy.set(false); }
@@ -204,14 +204,14 @@ export class ReportsComponent implements OnInit {
     const page = this.currentPage();
     if (!report || !page || this.busy() || this.dirty() || this.queue?.running()) return;
     const name = page.title || `Seite ${this.pageIndex + 1}`;
-    if (!confirm(publish ? `"${name}" veroeffentlichen? Die erste veroeffentlichte Seite macht den Bericht auf der Homepage sichtbar.` :
-      `"${name}" zuruecknehmen? Ohne weitere veroeffentlichte Seiten verschwindet auch der Bericht von der Homepage.`)) return;
+    if (!confirm(publish ? `"${name}" veröffentlichen? Die erste veröffentlichte Seite macht den Bericht auf der Homepage sichtbar.` :
+      `"${name}" zurücknehmen? Ohne weitere veröffentlichte Seiten verschwindet auch der Bericht von der Homepage.`)) return;
     this.busy.set(true); this.error.set(''); this.message.set('');
     try {
       this.accept(await this.auth.request<Report>(
         `/api/admin/reports/${report.id}/pages/${page.id}/${publish ? 'publish' : 'unpublish'}`, { version: report.version },
       ));
-      this.message.set(publish ? 'Seite veroeffentlicht.' : 'Seite zurueckgenommen.');
+      this.message.set(publish ? 'Seite veröffentlicht.' : 'Seite zurückgenommen.');
       this.changed.emit();
     } catch (error) { this.showError(error); }
     finally { this.busy.set(false); }
@@ -248,7 +248,7 @@ export class ReportsComponent implements OnInit {
   }
   removePage() {
     if (this.form.pages.length <= 1 || this.busy() || this.queue?.running()) return;
-    if (!confirm('Diese Seite aus dem Bericht entfernen? Beim Speichern verschwindet auch eine bereits veroeffentlichte Seite. Die Bilddateien bleiben erhalten.')) return;
+    if (!confirm('Diese Seite aus dem Bericht entfernen? Beim Speichern verschwindet auch eine bereits veröffentlichte Seite. Die Bilddateien bleiben erhalten.')) return;
     if (!this.canChangePage()) return;
     this.form.pages.splice(this.pageIndex, 1);
     this.pageIndex = Math.min(this.pageIndex, this.form.pages.length - 1);
@@ -259,7 +259,7 @@ export class ReportsComponent implements OnInit {
     const current = this.current();
     if (!current || this.busy() || current.status !== 'DRAFT' || this.dirty() || this.queue?.running()) return;
     if (this.queue && !this.queue.canLeave()) return;
-    if (!window.confirm(`Den Entwurf "${current.title}" unwiderruflich loeschen?`)) return;
+    if (!window.confirm(`Den Entwurf "${current.title}" unwiderruflich löschen?`)) return;
     this.busy.set(true);
     this.error.set('');
     try {
@@ -268,7 +268,7 @@ export class ReportsComponent implements OnInit {
       this.current.set(null);
       this.dirty.set(false);
       this.queue?.clear();
-      this.message.set('Entwurf geloescht.');
+      this.message.set('Entwurf gelöscht.');
       this.changed.emit();
     } catch (error) { this.showError(error); }
     finally { this.busy.set(false); }
@@ -317,12 +317,12 @@ export class ReportsComponent implements OnInit {
   insertImage(english = false) {
     const image = this.selectedImage();
     const editor = english ? this.englishEditor : this.editor;
-    if (!image || !editor) { this.error.set('Bitte ein Reisebild auswaehlen und den Editor laden.'); return; }
+    if (!image || !editor) { this.error.set('Bitte ein Reisebild auswählen und den Editor laden.'); return; }
     editor.insertImage(image, english ? this.imageCaptionEn || image.titleEn || image.title : this.imageCaption || image.title, this.imageSize);
   }
   addSelectedGallery() {
     const image = this.selectedImage();
-    if (!image) { this.error.set('Bitte ein Reisebild auswaehlen.'); return; }
+    if (!image) { this.error.set('Bitte ein Reisebild auswählen.'); return; }
     this.addGallery(image, this.imageCaption || image.title, this.imageCaptionEn || image.titleEn || '');
   }
   private addGallery(image: UploadedAsset, caption = image.title, captionEn = image.titleEn ?? '') {

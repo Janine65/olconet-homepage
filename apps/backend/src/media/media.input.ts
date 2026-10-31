@@ -17,10 +17,10 @@ function photoIds(value: unknown, minimum: number) {
     throw new BadRequestException(`Bitte ${minimum} bis 100 Bild-IDs angeben.`);
   }
   const ids = value.map((id: unknown) => {
-    if (typeof id !== 'string') throw new BadRequestException('Ungueltige Bild-ID.');
+    if (typeof id !== 'string') throw new BadRequestException('Ungültige Bild-ID.');
     return reportId(id).toLowerCase();
   });
-  if (new Set(ids).size !== ids.length) throw new BadRequestException('Jedes Bild darf nur einmal zur Gruppe gehoeren.');
+  if (new Set(ids).size !== ids.length) throw new BadRequestException('Jedes Bild darf nur einmal zur Gruppe gehören.');
   return ids;
 }
 

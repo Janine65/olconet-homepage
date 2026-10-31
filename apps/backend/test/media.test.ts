@@ -29,7 +29,7 @@ test('Bilddaten verlangen Kategorie und begrenzte Sortierung, Bildtexte sind opt
   assert.throws(() => galleryCategory(['SAMMY']));
 });
 
-test('Alternativtexte werden aus optionalen Bildunterschriften uebernommen, individuelle Texte bleiben erhalten', () => {
+test('Alternativtexte werden aus optionalen Bildunterschriften übernommen, individuelle Texte bleiben erhalten', () => {
   const input = { category: 'TRAVEL', description: '', sortOrder: 0 };
   const empty = mediaInput(input).data;
   assert.equal(empty.title, '');
@@ -51,7 +51,7 @@ test('Alternativtexte werden aus optionalen Bildunterschriften uebernommen, indi
   }
 });
 
-test('Nachtraegliche Gruppenfotos verlangen mindestens eine eindeutige Bild-ID und eine aktuelle Revision', () => {
+test('Nachträgliche Gruppenfotos verlangen mindestens eine eindeutige Bild-ID und eine aktuelle Revision', () => {
   const id = '11111111-1111-4111-8111-111111111111';
   assert.deepEqual(appendGroupInput({ ids: [id], revision: 0 }), { ids: [id], revision: 0 });
   for (const body of [

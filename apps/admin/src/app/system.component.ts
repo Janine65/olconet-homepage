@@ -25,19 +25,19 @@ interface SystemInfo {
         <p class="hint">Homepage und Release zeigen den Paketstand des Backend-Builds.
           Die Admin-Version stammt aus der aktuell geladenen Verwaltung.</p>
         @if (adminVersion !== data.versions.admin) {
-          <p class="error" role="alert">Admin und Backend stammen aus unterschiedlichen Paketstaenden.
+          <p class="error" role="alert">Admin und Backend stammen aus unterschiedlichen Paketständen.
             Der Backend-Build erwartet Admin {{ data.versions.admin }}.</p>
         }
       </section>
       <section class="reports">
         <h2>Besucheranzahl</h2>
         <p class="count">{{ data.visitors.total.toLocaleString('de') }}</p>
-        <p>Erfasste Browser-Sitzungen insgesamt. Seitenwechsel und Neuladen zaehlen nicht erneut.</p>
+        <p>Erfasste Browser-Sitzungen insgesamt. Seitenwechsel und Neuladen zählen nicht erneut.</p>
         <p role="status">Erfassung: <strong>{{ data.visitors.enabled ? 'Aktiviert' : 'Deaktiviert' }}</strong></p>
         @if (!data.visitors.enabled) {
-          <p class="hint">Im Dev-Modus oder bei fehlender Besucherzaehler-Konfiguration werden keine neuen Besuche erfasst.</p>
+          <p class="hint">Im Dev-Modus oder bei fehlender Besucherzähler-Konfiguration werden keine neuen Besuche erfasst.</p>
         }
-        <p class="hint">Das Abrufen dieser Verwaltungsseite erhoeht den Besucherzaehler nicht.</p>
+        <p class="hint">Das Abrufen dieser Verwaltungsseite erhöht den Besucherzähler nicht.</p>
       </section>
     }
     <p><button type="button" class="secondary" (click)="load()" [disabled]="loading()">Systeminformationen neu laden</button></p>

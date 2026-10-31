@@ -12,13 +12,13 @@ test('akzeptiert den internen Container-Port', () => {
   assert.equal(readConfig({ DATABASE_URL: databaseUrl, PORT: '8080' }).port, 8080);
 });
 
-test('weist fehlende oder ungueltige Datenbankkonfiguration zurueck', () => {
+test('weist fehlende oder ungültige Datenbankkonfiguration zurück', () => {
   for (const value of [undefined, '', 'keine-url', 'https://localhost/db', 'postgresql://localhost/']) {
     assert.throws(() => readConfig({ DATABASE_URL: value }));
   }
 });
 
-test('weist ungueltige Ports zurueck', () => {
+test('weist ungültige Ports zurück', () => {
   for (const port of ['', 'abc', '0', '65536', '1.5']) {
     assert.throws(() => readConfig({ DATABASE_URL: databaseUrl, PORT: port }));
   }

@@ -18,8 +18,8 @@ async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: 'omit' });
   if (!response.ok) {
     throw new Error(response.status === 404 ?
-      t('Dieser Reisebericht ist nicht veroeffentlicht oder wurde nicht gefunden.', 'This travel report is not published or could not be found.') :
-      t('Reiseberichte konnten nicht geladen werden. Bitte spaeter erneut versuchen.', 'Travel reports could not be loaded. Please try again later.'));
+      t('Dieser Reisebericht ist nicht veröffentlicht oder wurde nicht gefunden.', 'This travel report is not published or could not be found.') :
+      t('Reiseberichte konnten nicht geladen werden. Bitte später erneut versuchen.', 'Travel reports could not be loaded. Please try again later.'));
   }
   return await response.json() as T;
 }
@@ -29,7 +29,7 @@ function metadata(report: Summary) {
   const parts = [report.destination];
   if (report.travelStart) parts.push(`${t('Reisebeginn', 'Travel start')}: ${date(report.travelStart)}`);
   if (report.travelEnd) parts.push(`${t('Reiseende', 'Travel end')}: ${date(report.travelEnd)}`);
-  if (report.publishedAt) parts.push(`${t('Veroeffentlicht', 'Published')}: ${date(report.publishedAt)}`);
+  if (report.publishedAt) parts.push(`${t('Veröffentlicht', 'Published')}: ${date(report.publishedAt)}`);
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -40,7 +40,7 @@ export function loadReportList() {
   const previous = document.querySelector<HTMLButtonElement>('#reports-previous');
   const next = document.querySelector<HTMLButtonElement>('#reports-next');
   const retry = document.querySelector<HTMLButtonElement>('#reports-retry');
-  if (!status || !list || !label || !previous || !next || !retry) throw new Error('Berichtsliste ist unvollstaendig.');
+  if (!status || !list || !label || !previous || !next || !retry) throw new Error('Berichtsliste ist unvollständig.');
   let page = 1;
   let requestedPage = 1;
   const load = async (target: number) => {
@@ -70,7 +70,7 @@ export function loadReportList() {
       page = result.page;
       label.textContent = t(`Seite ${page}`, `Page ${page}`);
       status.textContent = result.items.length ? t(`${result.total} Reiseberichte`, `${result.total} travel ${result.total === 1 ? 'report' : 'reports'}`) :
-        t('Noch keine veroeffentlichten Reiseberichte auf dieser Seite.', 'No published travel reports on this page yet.');
+        t('Noch keine veröffentlichten Reiseberichte auf dieser Seite.', 'No published travel reports on this page yet.');
       previous.disabled = page <= 1;
       next.disabled = page * result.pageSize >= result.total;
     } catch (error) {
@@ -102,7 +102,7 @@ export function loadReport() {
   const select = document.querySelector<HTMLSelectElement>('#report-page-select');
   const retry = document.querySelector<HTMLButtonElement>('#report-retry');
   if (!status || !article || !title || !meta || !excerpt || !content || !gallery || !retry ||
-    !pageRoot || !pageTitle || !navigation || !position || !previous || !next || !select) throw new Error('Berichtsansicht ist unvollstaendig.');
+    !pageRoot || !pageTitle || !navigation || !position || !previous || !next || !select) throw new Error('Berichtsansicht ist unvollständig.');
   const slug = new URLSearchParams(location.search).get('slug');
   let report: Report | null = null;
   const pageUrl = (id: string) => pagePath(`/reisen/bericht/?slug=${encodeURIComponent(slug!)}&seite=${encodeURIComponent(id)}`, lang);
@@ -113,11 +113,11 @@ export function loadReport() {
     retry.hidden = false;
   };
   const render = (scroll = false) => {
-    if (!report?.pages.length) throw new Error(t('Dieser Bericht hat keine veroeffentlichten Seiten.', 'This report has no published pages.'));
+    if (!report?.pages.length) throw new Error(t('Dieser Bericht hat keine veröffentlichten Seiten.', 'This report has no published pages.'));
     const selected = new URLSearchParams(location.search).get('seite');
     const index = selected ? report.pages.findIndex(page => page.id === selected) : 0;
     const page = report.pages[index];
-    if (!page) throw new Error(t('Diese Berichtsseite ist nicht veroeffentlicht oder wurde nicht gefunden.', 'This report page is not published or could not be found.'));
+    if (!page) throw new Error(t('Diese Berichtsseite ist nicht veröffentlicht oder wurde nicht gefunden.', 'This report page is not published or could not be found.'));
     closePhotoViewer();
     pageTitle.textContent = page.title || t(`Seite ${index + 1}`, `Page ${index + 1}`);
     // Image URLs and alt text are resolved by the API from validated page associations.
@@ -139,7 +139,7 @@ export function loadReport() {
     }
     for (const image of pageRoot.querySelectorAll('img')) image.addEventListener('error', () => {
       status.hidden = false; status.setAttribute('role', 'alert');
-      status.textContent = t('Ein Reisebild ist momentan nicht verfuegbar. Bitte erneut laden.', 'A travel photo is currently unavailable. Please reload.'); retry.hidden = false;
+      status.textContent = t('Ein Reisebild ist momentan nicht verfügbar. Bitte erneut laden.', 'A travel photo is currently unavailable. Please reload.'); retry.hidden = false;
     });
     enablePhotoViewer(pageRoot);
     navigation.hidden = report.pages.length <= 1;
@@ -172,7 +172,7 @@ export function loadReport() {
     status.textContent = t('Reisebericht wird geladen ...', 'Loading travel report ...');
     status.setAttribute('role', 'status');
     try {
-      if (!slug) throw new Error(t('Der Link enthaelt kein Berichts-Kuerzel.', 'The link does not contain a report slug.'));
+      if (!slug) throw new Error(t('Der Link enthält kein Berichts-Kürzel.', 'The link does not contain a report slug.'));
       report = await fetchJson<Report>(`/api/public/reports/${encodeURIComponent(slug)}?lang=${lang}`);
       title.textContent = report.title;
       document.title = `${report.title} | olconet`;

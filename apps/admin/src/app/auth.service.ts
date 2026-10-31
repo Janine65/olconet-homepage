@@ -21,7 +21,7 @@ export class AuthService {
         ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
       });
     } catch {
-      throw new ApiError(0, 'Das Backend ist nicht erreichbar. Bitte die Verbindung pruefen.');
+      throw new ApiError(0, 'Das Backend ist nicht erreichbar. Bitte die Verbindung prüfen.');
     }
     return this.checkResponse(response, path, body !== undefined);
   }
@@ -30,7 +30,7 @@ export class AuthService {
     if (!response.ok) {
       if (response.status === 401) this.user.set(null);
       const messages: Record<number, string> = {
-        400: 'Die Eingaben sind ungueltig.',
+        400: 'Die Eingaben sind ungültig.',
         401: writing && path.endsWith('/login') ? 'E-Mail-Adresse oder Passwort ist falsch.' : 'Die Sitzung ist abgelaufen. Bitte erneut anmelden.',
         403: 'Die Anfrage wurde abgelehnt. Bitte die konfigurierte Verwaltungsadresse verwenden.',
         429: path.endsWith('/login') ? 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.' : 'Der Dienst ist ausgelastet. Bitte erneut versuchen.',
@@ -38,11 +38,11 @@ export class AuthService {
         409: 'Speicherkonflikt. Bitte die gespeicherte Version neu laden.',
         413: 'Die Anfrage ist zu gross.',
       };
-      let message = messages[response.status] ?? 'Der Dienst ist voruebergehend nicht verfuegbar. Bitte erneut versuchen.';
+      let message = messages[response.status] ?? 'Der Dienst ist vorübergehend nicht verfügbar. Bitte erneut versuchen.';
       if ([400, 404, 409].includes(response.status)) {
         let data: unknown;
         try { data = await response.json(); }
-        catch { throw new ApiError(response.status, 'Das Backend hat eine ungueltige Fehlerantwort geliefert.'); }
+        catch { throw new ApiError(response.status, 'Das Backend hat eine ungültige Fehlerantwort geliefert.'); }
         if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
           message = data.message;
         }
@@ -71,9 +71,9 @@ export class AuthService {
     await this.checkResponse(response, path, true);
     let data: unknown;
     try { data = await response.json(); }
-    catch { throw new ApiError(0, 'Ungueltige Upload-Antwort. Bitte erneut versuchen.'); }
+    catch { throw new ApiError(0, 'Ungültige Upload-Antwort. Bitte erneut versuchen.'); }
     if (!data || typeof data !== 'object' || !('id' in data) || typeof data.id !== 'string') {
-      throw new ApiError(0, 'Ungueltige Upload-Antwort. Bitte erneut versuchen.');
+      throw new ApiError(0, 'Ungültige Upload-Antwort. Bitte erneut versuchen.');
     }
     return { id: data.id };
   }
@@ -83,7 +83,7 @@ export class AuthService {
     try {
       return await response.json() as T;
     } catch {
-      throw new ApiError(0, 'Das Backend hat eine ungueltige Antwort geliefert.');
+      throw new ApiError(0, 'Das Backend hat eine ungültige Antwort geliefert.');
     }
   }
 

@@ -33,7 +33,7 @@ async function main() {
     const { password: passwordPrompt } = await import('@inquirer/prompts');
     password = await passwordPrompt({ message: 'Passwort (mindestens 12 Zeichen):', mask: '*' });
     const confirmation = await passwordPrompt({ message: 'Passwort wiederholen:', mask: '*' });
-    if (password !== confirmation) throw new BadRequestException('Die Passwoerter stimmen nicht ueberein.');
+    if (password !== confirmation) throw new BadRequestException('Die Passwörter stimmen nicht überein.');
   }
   validatePassword(password, true);
   const prisma = new PrismaService();
@@ -41,7 +41,7 @@ async function main() {
     await prisma.adminUser.create({
       data: { email, displayName, passwordHash: await hashPassword(password) },
     });
-    console.log(`Verwaltungskonto fuer ${email} angelegt.`);
+    console.log(`Verwaltungskonto für ${email} angelegt.`);
   } finally {
     await prisma.$disconnect();
   }
@@ -54,11 +54,11 @@ main().catch((error: unknown) => {
     console.error('Ein Konto mit dieser E-Mail-Adresse existiert bereits.');
   } else if (error instanceof Prisma.PrismaClientKnownRequestError &&
     ['P2021', 'P2022'].includes(error.code)) {
-    console.error('Datenbanktabellen fehlen oder sind veraltet. Zuerst pnpm db:deploy im Projektwurzelverzeichnis ausfuehren, danach das Konto erneut anlegen.');
+    console.error('Datenbanktabellen fehlen oder sind veraltet. Zuerst pnpm db:deploy im Projektwurzelverzeichnis ausführen, danach das Konto erneut anlegen.');
   } else if (error instanceof Error && error.name === 'ExitPromptError') {
     console.error('Kontoeinrichtung abgebrochen.');
   } else {
-    console.error('Kontoeinrichtung fehlgeschlagen. Argumente, Datenbankverbindung und Migrationen pruefen.');
+    console.error('Kontoeinrichtung fehlgeschlagen. Argumente, Datenbankverbindung und Migrationen prüfen.');
   }
   process.exitCode = 1;
 });

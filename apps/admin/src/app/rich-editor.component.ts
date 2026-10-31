@@ -14,16 +14,16 @@ function imageSize(value: unknown): InlineImageSize {
   template: `
     <div class="editor-toolbar" role="toolbar" aria-label="Textformatierung">
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().setParagraph().run()">Absatz</button>
-      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleHeading({level: 2}).run()">Ueberschrift</button>
+      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleHeading({level: 2}).run()">Überschrift</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleHeading({level: 3}).run()">Untertitel</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleBold().run()">Fett</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleItalic().run()">Kursiv</button>
-      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleBulletList().run()">Aufzaehlung</button>
+      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleBulletList().run()">Aufzählung</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleOrderedList().run()">Nummerierung</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().toggleBlockquote().run()">Zitat</button>
-      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().undo().run()">Rueckgaengig</button>
+      <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().undo().run()">Rückgängig</button>
       <button type="button" [disabled]="disabled" (click)="editor?.chain().focus().redo().run()">Wiederholen</button>
-      <span>Bildgroesse:</span>
+      <span>Bildgrösse:</span>
       <button type="button" [disabled]="disabled || selectedImageSize() === null" [attr.aria-pressed]="selectedImageSize() === 100" (click)="resizeImage(100)">Klein (100 x 100)</button>
       <button type="button" [disabled]="disabled || selectedImageSize() === null" [attr.aria-pressed]="selectedImageSize() === 250" (click)="resizeImage(250)">Mittel (250 x 250)</button>
       <button type="button" [disabled]="disabled || selectedImageSize() === null" [attr.aria-pressed]="selectedImageSize() === 500" (click)="resizeImage(500)">Gross (500 x 500)</button>

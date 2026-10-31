@@ -60,7 +60,7 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
     assert.equal((await post({ ...move, assetId: drawing.id })).status, 404);
     assert.equal((await post({ ...move, token: '0'.repeat(64) })).status, 409);
   });
-  await t.test('Verschieben ueber Seiten normalisiert gleiche Sortierwerte und aendert nur diese Kategorie', async () => {
+  await t.test('Verschieben über Seiten normalisiert gleiche Sortierwerte und ändert nur diese Kategorie', async () => {
     const before = await order();
     assert.equal(before.total, 25); assert.equal(before.items.length, 20);
     assert.equal(before.items[0].title, 'Bild 1');
@@ -77,7 +77,7 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
     assert.equal(publicFirst.total, 24);
     assert.equal(publicFirst.items.some((item: { title: string }) => item.title === 'Bild 6'), false);
   });
-  await t.test('Nachbarn ueber die Seitengrenze verschieben; veraltete Metadaten koennen Sortierung nicht ueberschreiben', async () => {
+  await t.test('Nachbarn über die Seitengrenze verschieben; veraltete Metadaten können Sortierung nicht überschreiben', async () => {
     const snapshot = await order(2);
     const id = snapshot.items[0].id;
     const old = await db.mediaAsset.findUniqueOrThrow({ where: { id } });
@@ -95,7 +95,7 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
     ]);
     assert.deepEqual(responses.map(r => r.status).sort(), [201, 409]);
   });
-  await t.test('Neue Bilder, Loeschen und Kategorie-Wechsel machen alte Reihenfolge-Tokens ungueltig', async () => {
+  await t.test('Neue Bilder, Löschen und Kategorie-Wechsel machen alte Reihenfolge-Tokens ungültig', async () => {
     const snapshot = await order();
     const added = await db.mediaAsset.create({ data: {
       category: 'SAMMY', title: 'Neu', altText: 'Neu', originalName: 'fixture',
@@ -108,13 +108,13 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
     await db.mediaAsset.update({ where: { id: drawing.id }, data: { category: 'SAMMY', revision: { increment: 1 } } });
     assert.equal((await post({ category: 'SAMMY', assetId: snapshot.items[0].id, position: 2, token: snapshot.token })).status, 409);
   });
-  await t.test('Gleiche Position ist ein No-op und veraendert keine Revisionen', async () => {
+  await t.test('Gleiche Position ist ein No-op und verändert keine Revisionen', async () => {
     const snapshot = await order();
     assert.equal((await post({ category: 'SAMMY', assetId: snapshot.items[0].id, position: 1, token: snapshot.token })).status, 201);
     assert.equal((await order()).token, snapshot.token);
   });
   for (const category of ['DRAWING', 'SAMMY'] as const) {
-    await t.test(`${category}: neue Veroeffentlichungen vorne, manuelle Reihenfolge und Gruppenfotos bleiben erhalten`, async () => {
+    await t.test(`${category}: neue Veröffentlichungen vorne, manuelle Reihenfolge und Gruppenfotos bleiben erhalten`, async () => {
       const gallery = async () => {
         const first = await (await get(`/api/public/media?category=${category}`, false)).json();
         const second = await (await get(`/api/public/media?category=${category}&page=2`, false)).json();
@@ -159,7 +159,7 @@ test('Kategorie-Reihenfolge mit mehr als einer Bildseite', async t => {
       assert.equal((await db.mediaAsset.findUniqueOrThrow({ where: { id: last.id } })).sortOrder, 2);
     });
   }
-  await t.test('Veroeffentlichte Kategorie-Wechsel werden in der Zielgalerie vorne eingefuegt', async () => {
+  await t.test('Veröffentlichte Kategorie-Wechsel werden in der Zielgalerie vorne eingefügt', async () => {
     const asset = await db.mediaAsset.findFirstOrThrow({ where: { category: 'DRAWING', parentId: null, status: 'PUBLISHED' } });
     const response = await fetch(`${base}/api/admin/media/${asset.id}/save`, {
       method: 'POST', headers: { ...headers, Cookie: cookie },

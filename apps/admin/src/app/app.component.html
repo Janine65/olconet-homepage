@@ -7,7 +7,7 @@
 </header>
 @if (auth.user() && !loading()) {
   <nav class="admin-nav" aria-label="Verwaltungsbereiche">
-    <a routerLink="/uebersicht" routerLinkActive="active" ariaCurrentWhenActive="page">Uebersicht</a>
+    <a routerLink="/uebersicht" routerLinkActive="active" ariaCurrentWhenActive="page">Übersicht</a>
     <a routerLink="/reiseberichte" routerLinkActive="active" ariaCurrentWhenActive="page">Reiseberichte</a>
     <a routerLink="/kreationen" routerLinkActive="active" ariaCurrentWhenActive="page">Meine Kreationen</a>
     <a routerLink="/sammy" routerLinkActive="active" ariaCurrentWhenActive="page">Sammy</a>
@@ -17,7 +17,7 @@
 }
 <main>
   @if (loading()) {
-    <p role="status">Sitzung wird geprueft ...</p>
+    <p role="status">Sitzung wird geprüft ...</p>
   } @else {
     @if (error()) {
       <p class="error" role="alert">{{ error() }}</p>
@@ -33,11 +33,11 @@
           <input id="email" name="email" type="email" autocomplete="username" required maxlength="254" [(ngModel)]="email" [disabled]="busy()">
           <label for="password">Passwort</label>
           <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128" [(ngModel)]="password" [disabled]="busy()">
-          <button type="submit" [disabled]="busy() || loginForm.invalid">{{ busy() ? 'Anmeldung laeuft ...' : 'Anmelden' }}</button>
+          <button type="submit" [disabled]="busy() || loginForm.invalid">{{ busy() ? 'Anmeldung läuft ...' : 'Anmelden' }}</button>
         </form>
         <p>Sitzungen enden nach acht Stunden oder beim Abmelden.</p>
         @if (error()) {
-          <button type="button" class="secondary" (click)="restore()" [disabled]="busy()">Sitzung erneut pruefen</button>
+          <button type="button" class="secondary" (click)="restore()" [disabled]="busy()">Sitzung erneut prüfen</button>
         }
       </section>
     }

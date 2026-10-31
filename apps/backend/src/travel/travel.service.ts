@@ -103,7 +103,7 @@ export class TravelService {
             imageIds: [...new Set([...page.imageIds, ...inlineImageIds(contentHtmlEn)])] };
         });
         if (pages.reduce((total, page) => total + Buffer.byteLength(page.contentHtmlEn), 0) > 100000) {
-          throw new BadRequestException('Alle englischen Berichtstexte zusammen duerfen maximal 100000 UTF-8-Bytes enthalten.');
+          throw new BadRequestException('Alle englischen Berichtstexte zusammen dürfen maximal 100000 UTF-8-Bytes enthalten.');
         }
         const imageIds = [...new Set(pages.flatMap(page => page.imageIds))];
         if (imageIds.length > 100) throw new BadRequestException('Maximal 100 verschiedene Bilder pro Bericht erlaubt.');
@@ -115,7 +115,7 @@ export class TravelService {
           where: { id, version }, data: { ...data, status: published.length ? 'PUBLISHED' : 'DRAFT',
             publishedAt: published.length ? current.publishedAt : null, version: { increment: 1 } },
         });
-        if (!result.count) throw new ConflictException('Der Bericht wurde inzwischen geaendert. Bitte neu laden; deine Eingaben wurden nicht gespeichert.');
+        if (!result.count) throw new ConflictException('Der Bericht wurde inzwischen geändert. Bitte neu laden; deine Eingaben wurden nicht gespeichert.');
         await db.reportImage.deleteMany({ where: { reportId: id } });
         await db.reportPage.deleteMany({ where: { reportId: id, id: { notIn: pages.map(page => page.id) } } });
         await this.savePages(db, id, pages);
@@ -143,7 +143,7 @@ export class TravelService {
           version: { increment: 1 },
         },
       });
-      if (!result.count) throw new ConflictException('Der Bericht wurde inzwischen geaendert. Bitte neu laden.');
+      if (!result.count) throw new ConflictException('Der Bericht wurde inzwischen geändert. Bitte neu laden.');
       for (const page of targets) await db.reportPage.update({
         where: { id: page.id }, data: { status: publish ? 'PUBLISHED' : 'DRAFT',
           publishedAt: publish ? (page.publishedAt ?? new Date()) : null },
@@ -157,9 +157,9 @@ export class TravelService {
     if (!result.count) {
       const report = await this.get(id);
       if (report.status === 'PUBLISHED') {
-        throw new BadRequestException('Vor dem Loeschen die Veroeffentlichung zuruecknehmen.');
+        throw new BadRequestException('Vor dem Löschen die Veröffentlichung zurücknehmen.');
       }
-      throw new ConflictException('Der Bericht wurde inzwischen geaendert. Bitte neu laden.');
+      throw new ConflictException('Der Bericht wurde inzwischen geändert. Bitte neu laden.');
     }
     return { deleted: true };
   }
@@ -197,12 +197,12 @@ export class TravelService {
     if (!ids.length) return;
     await lockMedia(db, this.prisma.databaseSchema, ids);
     const count = await db.mediaAsset.count({ where: { id: { in: ids }, category: 'TRAVEL' } });
-    if (count !== ids.length) throw new BadRequestException('Alle Berichtsbilder muessen vorhandene Bilder der Kategorie TRAVEL sein.');
+    if (count !== ids.length) throw new BadRequestException('Alle Berichtsbilder müssen vorhandene Bilder der Kategorie TRAVEL sein.');
   }
 
   private rethrow(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new ConflictException('Dieses URL-Kuerzel oder diese Seiten-ID wird bereits verwendet.');
+      throw new ConflictException('Dieses URL-Kürzel oder diese Seiten-ID wird bereits verwendet.');
     }
     throw error;
   }

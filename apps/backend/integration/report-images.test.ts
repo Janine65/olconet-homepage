@@ -68,7 +68,7 @@ test('Reisebilder im Text, Galerie und sichere Upload-Wiederholung', async t => 
     assert.equal((await post(`/api/admin/media/${first}/delete`, { revision: 0 })).status, 409);
     assert.equal((await post(`/api/admin/media/${first}/save`, { ...metadata, uploadKey: undefined, category: 'SAMMY', revision: 0 })).status, 409);
   });
-  await t.test('Fehlende oder falsche Bildkategorien rollen die gesamte Berichtsspeicherung zurueck', async () => {
+  await t.test('Fehlende oder falsche Bildkategorien rollen die gesamte Berichtsspeicherung zurück', async () => {
     const wrong = await db.mediaAsset.create({ data: { category: 'DRAWING', title: 'Falsch', altText: 'Falsch',
       storageKey: 'fixture', originalName: 'fixture', mimeType: 'image/webp', byteSize: 1 } });
     for (const id of [randomUUID(), wrong.id]) {
@@ -80,7 +80,7 @@ test('Reisebilder im Text, Galerie und sichere Upload-Wiederholung', async t => 
     assert.equal(persisted.images.length, 2);
     await db.mediaAsset.delete({ where: { id: wrong.id } });
   });
-  await t.test('Veroeffentlichung gibt nur zugeordnete Bilder unter berichtsspezifischen URLs frei', async () => {
+  await t.test('Veröffentlichung gibt nur zugeordnete Bilder unter berichtsspezifischen URLs frei', async () => {
     report = await (await post(`/api/admin/reports/${report.id}/publish`, { version: report.version })).json();
     const published = await (await get('/api/public/reports/reisebilder')).json();
     assert.match(published.contentHtml, new RegExp(`/api/public/reports/reisebilder/images/${first}`));
@@ -90,7 +90,7 @@ test('Reisebilder im Text, Galerie und sichere Upload-Wiederholung', async t => 
     assert.equal((await get(`/api/public/media/${first}/image`)).status, 404);
     assert.equal((await get(`/api/public/reports/not-this-report/images/${first}`)).status, 404);
   });
-  await t.test('Alle drei Textbildgroessen bleiben nach Speichern erhalten, Bilddatei und Galerie bleiben unveraendert', async () => {
+  await t.test('Alle drei Textbildgrössen bleiben nach Speichern erhalten, Bilddatei und Galerie bleiben unverändert', async () => {
     const original = await (await get(`/api/public/reports/reisebilder/images/${first}`)).arrayBuffer();
     for (const size of [100, 250, 500]) {
       const response = await post(`/api/admin/reports/${report.id}/save`, {
@@ -122,7 +122,7 @@ test('Reisebilder im Text, Galerie und sichere Upload-Wiederholung', async t => 
       galleryImages: [{ assetId: second, caption: '' }] })).json();
     assert.equal((await get(`/api/public/reports/reisebilder/images/${first}`)).status, 404);
   });
-  await t.test('Ruecknahme und Loeschen loesen Zuordnungen, ohne gemeinsam verwendete Dateien zu loeschen', async () => {
+  await t.test('Rücknahme und Löschen lösen Zuordnungen, ohne gemeinsam verwendete Dateien zu löschen', async () => {
     const shared: Report = await (await post('/api/admin/reports', { ...input, slug: 'gemeinsam',
       galleryImages: [{ assetId: second, caption: '' }] })).json();
     await post(`/api/admin/reports/${shared.id}/publish`, { version: shared.version });

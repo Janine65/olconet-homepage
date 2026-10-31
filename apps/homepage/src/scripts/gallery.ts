@@ -41,7 +41,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-gallery]')) {
           image.loading = 'lazy';
           image.addEventListener('error', () => {
             status.setAttribute('role', 'alert');
-            status.textContent = t('Ein Bild ist momentan nicht verfuegbar. Bitte die Galerie erneut laden.', 'A photo is currently unavailable. Please reload the gallery.');
+            status.textContent = t('Ein Bild ist momentan nicht verfügbar. Bitte die Galerie erneut laden.', 'A photo is currently unavailable. Please reload the gallery.');
             retry.hidden = false;
           });
           photos.append(image);
@@ -62,9 +62,9 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-gallery]')) {
         items.append(figure);
       }
       enablePhotoViewer(items);
-      status.textContent = data.total ? t(`${data.total} ${data.total === 1 ? 'Galerieeintrag' : 'Galerieeintraege'} (Einzelbilder und Fotogruppen)`,
+      status.textContent = data.total ? t(`${data.total} ${data.total === 1 ? 'Galerieeintrag' : 'Galerieeinträge'} (Einzelbilder und Fotogruppen)`,
         `${data.total} gallery ${data.total === 1 ? 'entry' : 'entries'} (individual photos and photo groups)`) :
-        t('Hier sind noch keine Bilder veroeffentlicht.', 'No photos have been published here yet.');
+        t('Hier sind noch keine Bilder veröffentlicht.', 'No photos have been published here yet.');
       pageLabel.textContent = t(`Seite ${page}`, `Page ${page}`);
       previous.disabled = page <= 1;
       next.disabled = page * 20 >= data.total;

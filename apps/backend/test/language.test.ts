@@ -5,7 +5,7 @@ import { hasContent, reportInput } from '../src/travel/travel.input';
 import { mediaInput } from '../src/media/media.input';
 import { rss } from '../src/travel/rss';
 
-test('Sprachen werden explizit validiert, leere Uebersetzungen fallen feldweise auf Deutsch zurueck', () => {
+test('Sprachen werden explizit validiert, leere Übersetzungen fallen feldweise auf Deutsch zurück', () => {
   assert.equal(language(undefined), 'de');
   assert.equal(language('de'), 'de');
   assert.equal(language('en'), 'en');
@@ -45,7 +45,7 @@ test('Englische Eingaben sind optional, begrenzt und werden genau wie deutsche I
   }
 });
 
-test('Englischer RSS-Feed verwendet englische Links und Sprachangaben ohne deutsche URLs zu veraendern', () => {
+test('Englischer RSS-Feed verwendet englische Links und Sprachangaben ohne deutsche URLs zu verändern', () => {
   const items = [{ id: 'abc', slug: 'reise', title: 'Trip & lake', excerpt: 'A & B', publishedAt: null }];
   const english = rss(items, 'https://example.com', 'en');
   assert.match(english, /<language>en<\/language>/);

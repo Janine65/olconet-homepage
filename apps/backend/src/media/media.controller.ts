@@ -48,7 +48,7 @@ export class MediaController {
     }
     let metadata: unknown;
     try { metadata = JSON.parse(body['metadata']); }
-    catch { throw new BadRequestException('metadata muss gueltiges JSON enthalten.'); }
+    catch { throw new BadRequestException('metadata muss gültiges JSON enthalten.'); }
     return this.media.upload(file, metadata);
   }
 

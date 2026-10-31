@@ -8,7 +8,7 @@ const input = {
   destination: '', travelStart: '', travelEnd: '',
 };
 
-test('Entwuerfe duerfen leer sein, Veroeffentlichung benoetigt Text und Kurzbeschreibung', () => {
+test('Entwürfe dürfen leer sein, Veröffentlichung benötigt Text und Kurzbeschreibung', () => {
   const parsed = reportInput(input);
   assert.equal(parsed.data.destination, null);
   assert.equal(parsed.data.travelStart, null);
@@ -24,7 +24,7 @@ test('Visueller Inhalt erlaubt Formatierung, aber keine Skripte, Attribute oder 
     '<h2>Titel</h2><ul><li>Ort</li></ul>');
 });
 
-test('Berichtsdaten sind begrenzt und echte Kalenderdaten sowie Reihenfolge werden geprueft', () => {
+test('Berichtsdaten sind begrenzt und echte Kalenderdaten sowie Reihenfolge werden geprüft', () => {
   for (const patch of [
     { title: '' }, { title: 'a'.repeat(201) }, { slug: 'Bad_Slug' }, { slug: 'a--b' },
     { excerpt: 'a'.repeat(1001) }, { destination: 'a'.repeat(201) },
@@ -74,7 +74,7 @@ test('Berichtsbilder erlauben nur validierte IDs, nie fremde URLs oder vom Clien
   assert.throws(() => reportInput({ ...input, galleryImages: [{ assetId: id, caption: 'x'.repeat(501) }] }));
 });
 
-test('Berichtsseiten haben eigene Inhalte und Bilder, aber keine vom Client gesetzten Veroeffentlichungszustaende', () => {
+test('Berichtsseiten haben eigene Inhalte und Bilder, aber keine vom Client gesetzten Veröffentlichungszustände', () => {
   const { contentHtml: _content, ...metadata } = input;
   const id = '11111111-1111-4111-8111-111111111111';
   const page = { id, title: 'Anreise', contentHtml: '<p>Unterwegs</p>', galleryImages: [] };
@@ -98,7 +98,7 @@ test('Berichtsseiten haben eigene Inhalte und Bilder, aber keine vom Client gese
   assert.equal(reportInput({ ...metadata, pages: Array.from({ length: 100 }, () => ({ contentHtml: '' })) }).pages.length, 100);
 });
 
-test('Textbilder speichern genau drei Groessen und erzeugen nur vertrauenswuerdige Abmessungen', () => {
+test('Textbilder speichern genau drei Grössen und erzeugen nur vertrauenswürdige Abmessungen', () => {
   const id = '11111111-1111-4111-8111-111111111111';
   for (const size of ['100', '250', '500']) {
     const html = `<figure><img data-asset-id="${id}" data-image-size="${size}" width="9999" height="1" style="width:9999px"></figure>`;

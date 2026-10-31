@@ -23,7 +23,7 @@ export class AppComponent implements OnInit {
   constructor() {
     this.router.events.pipe(takeUntilDestroyed()).subscribe(event => {
       if (event instanceof NavigationError) {
-        this.error.set('Die Verwaltungsseite konnte nicht geladen werden. Bitte die Verbindung pruefen und die Seite neu laden.');
+        this.error.set('Die Verwaltungsseite konnte nicht geladen werden. Bitte die Verbindung prüfen und die Seite neu laden.');
       }
     });
   }

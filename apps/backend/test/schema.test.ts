@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 
-test('Historische SQL-Migrationen entsprechen den zugehoerigen Prisma-Modellen', (t) => {
+test('Historische SQL-Migrationen entsprechen den zugehörigen Prisma-Modellen', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'olconet-schema-test-'));
   t.after(() => rmSync(directory, { recursive: true }));
   const baseline = join(directory, 'baseline.prisma');

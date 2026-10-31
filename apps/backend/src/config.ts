@@ -7,7 +7,7 @@ export function readConfig(env: NodeJS.ProcessEnv) {
   try {
     url = new URL(databaseUrl);
   } catch {
-    throw new ConfigurationError('DATABASE_URL muss eine gueltige PostgreSQL-URL sein.');
+    throw new ConfigurationError('DATABASE_URL muss eine gültige PostgreSQL-URL sein.');
   }
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.pathname.length < 2) {
     throw new ConfigurationError('DATABASE_URL muss auf eine benannte PostgreSQL-Datenbank zeigen.');

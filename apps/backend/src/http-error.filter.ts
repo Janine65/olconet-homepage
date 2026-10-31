@@ -15,7 +15,7 @@ export class HttpErrorFilter implements ExceptionFilter {
     if (error && typeof error === 'object' && 'type' in error) {
       if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
         const status = error.type === 'entity.too.large' ? 413 : 400;
-        response.status(status).json({ statusCode: status, message: 'Ungueltiger oder zu grosser JSON-Anfrageinhalt.' });
+        response.status(status).json({ statusCode: status, message: 'Ungültiger oder zu grosser JSON-Anfrageinhalt.' });
         return;
       }
     }
@@ -24,9 +24,9 @@ export class HttpErrorFilter implements ExceptionFilter {
       error instanceof Prisma.PrismaClientInitializationError ||
       error instanceof Prisma.PrismaClientUnknownRequestError;
     this.logger.error(databaseError
-      ? 'API-Anfrage fehlgeschlagen; Datenbankverbindung und Migrationsstand pruefen.'
-      : 'Unerwarteter API-Fehler. Anwendungskonfiguration und gespeicherte Daten pruefen.');
+      ? 'API-Anfrage fehlgeschlagen; Datenbankverbindung und Migrationsstand prüfen.'
+      : 'Unerwarteter API-Fehler. Anwendungskonfiguration und gespeicherte Daten prüfen.');
     const status = databaseError ? 503 : 500;
-    response.status(status).json({ statusCode: status, message: 'Der Dienst ist voruebergehend nicht verfuegbar.' });
+    response.status(status).json({ statusCode: status, message: 'Der Dienst ist vorübergehend nicht verfügbar.' });
   }
 }

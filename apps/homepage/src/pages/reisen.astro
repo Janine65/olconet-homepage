@@ -14,10 +14,10 @@ const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
   <div class="pagination">
     <button id="reports-previous" type="button" disabled>{t('Vorherige Seite', 'Previous page')}</button>
     <span id="reports-page"></span>
-    <button id="reports-next" type="button" disabled>{t('Naechste Seite', 'Next page')}</button>
+    <button id="reports-next" type="button" disabled>{t('Nächste Seite', 'Next page')}</button>
     <button id="reports-retry" type="button" hidden>{t('Erneut versuchen', 'Try again')}</button>
   </div>
-  <noscript><p>{t('Fuer die aktuelle Berichtsliste bitte JavaScript aktivieren oder diesen Feed verwenden:', 'Please enable JavaScript for the current report list or use this feed:')} <a href={feed}>RSS</a>.</p></noscript>
+  <noscript><p>{t('Für die aktuelle Berichtsliste bitte JavaScript aktivieren oder diesen Feed verwenden:', 'Please enable JavaScript for the current report list or use this feed:')} <a href={feed}>RSS</a>.</p></noscript>
 </Layout>
 <script>
   import { loadReportList } from '../scripts/reports';

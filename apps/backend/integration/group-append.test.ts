@@ -79,7 +79,7 @@ test('Bestehende Fotogruppen sicher erweitern', async t => {
   assert.equal((await post(`/api/admin/media/${id}/publish`, { revision: root.revision })).status, 201);
   root = await current(id);
 
-  await t.test('Anhaengen verlangt Sitzung, Ursprung und eine echte Fotogruppe', async () => {
+  await t.test('Anhängen verlangt Sitzung, Ursprung und eine echte Fotogruppe', async () => {
     const photo = await upload();
     const body = { ids: [photo], revision: root.revision };
     assert.equal((await post(`/api/admin/media/${id}/photos`, body, false)).status, 401);
@@ -122,7 +122,7 @@ test('Bestehende Fotogruppen sicher erweitern', async t => {
     assert.equal((await post(`/api/admin/media/${id}/photos`, { ids: [fresh], revision: before.revision })).status, 409);
     assert.equal((await current(fresh)).parentId, null);
   });
-  await t.test('Ungueltige Fotos rollen die gesamte Erweiterung zurueck', async () => {
+  await t.test('Ungültige Fotos rollen die gesamte Erweiterung zurück', async () => {
     const valid = await upload();
     const wrongCategory = await upload('DRAWING');
     const modified = await upload();
@@ -150,7 +150,7 @@ test('Bestehende Fotogruppen sicher erweitern', async t => {
     assert.equal((await post(`/api/admin/media/${id}/photos`, { ids: [loser], revision: root.revision })).status, 201);
     root = await current(id);
   });
-  await t.test('Ruecknahme und Erweiterung koennen keinen abweichenden Foto-Status erzeugen', async () => {
+  await t.test('Rücknahme und Erweiterung können keinen abweichenden Foto-Status erzeugen', async () => {
     for (let attempt = 0; attempt < 8; attempt++) {
       const photo = await upload();
       if (root.status === 'DRAFT') {
@@ -172,7 +172,7 @@ test('Bestehende Fotogruppen sicher erweitern', async t => {
       for (const child of root.children) assert.equal(child.status, root.status);
     }
   });
-  await t.test('Kreationen-Entwuerfe bleiben privat und die Grenze von genau 100 Fotos wird eingehalten', async () => {
+  await t.test('Kreationen-Entwürfe bleiben privat und die Grenze von genau 100 Fotos wird eingehalten', async () => {
     const draft = await group('DRAWING');
     for (let i = 0; i < 97; i++) synthetic.push(randomUUID());
     await db.mediaAsset.createMany({ data: synthetic.map((photoId, index) => ({

@@ -2,33 +2,33 @@
   <div class="section-heading">
     <h1 tabindex="-1">{{ mode === 'new' ? 'Neuer Reisebericht' : mode === 'edit' ? 'Reisebericht bearbeiten' : 'Reiseberichte' }}</h1>
     @if (!mode) { <a class="button-link" routerLink="/reiseberichte/neu">Neuer Reisebericht</a> }
-    @else { <a routerLink="/reiseberichte">Zurueck zur Berichtsliste</a> }
+    @else { <a routerLink="/reiseberichte">Zurück zur Berichtsliste</a> }
   </div>
   @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
   @if (message()) { <p class="success" role="status">{{ message() }}</p> }
   @if (editing()) {
     <form #reportForm="ngForm" (ngSubmit)="save()" class="report-form">
       <h3>{{ current() ? 'Bericht bearbeiten' : 'Neuer Entwurf' }}</h3>
-      <p>{{ current()?.status === 'PUBLISHED' ? 'Bericht sichtbar: Aenderungen an veroeffentlichten Seiten sind nach dem Speichern sofort oeffentlich. Neue Seiten bleiben Entwuerfe.' : 'Bericht privat: Die erste veroeffentlichte Seite macht ihn auf der Homepage sichtbar.' }}</p>
+      <p>{{ current()?.status === 'PUBLISHED' ? 'Bericht sichtbar: Änderungen an veröffentlichten Seiten sind nach dem Speichern sofort öffentlich. Neue Seiten bleiben Entwürfe.' : 'Bericht privat: Die erste veröffentlichte Seite macht ihn auf der Homepage sichtbar.' }}</p>
       @if (mode === 'new' && current(); as saved) {
-        <p>Dieser Entwurf ist gespeichert. <a [routerLink]="['/reiseberichte', saved.id]">Gespeicherten Bericht direkt oeffnen</a>
+        <p>Dieser Entwurf ist gespeichert. <a [routerLink]="['/reiseberichte', saved.id]">Gespeicherten Bericht direkt öffnen</a>
           (offene Uploads werden beim Wechsel verworfen).</p>
       }
       @if (current()?.contentMarkdown && !current()?.contentHtml) {
-        <p class="error" role="alert">Dieser Bericht enthaelt alten Markdown-Text. Er bleibt in der Datenbank erhalten; bitte den Text in den neuen Editor uebertragen.</p>
+        <p class="error" role="alert">Dieser Bericht enthält alten Markdown-Text. Er bleibt in der Datenbank erhalten; bitte den Text in den neuen Editor übertragen.</p>
         <pre>{{ current()?.contentMarkdown }}</pre>
       }
       <label for="report-title">Titel</label>
       <input id="report-title" name="title" required maxlength="200" [(ngModel)]="form.title" (ngModelChange)="titleChanged()" [disabled]="busy()">
-      <label for="report-slug">URL-Kuerzel (Kleinbuchstaben, Zahlen, Bindestriche)</label>
+      <label for="report-slug">URL-Kürzel (Kleinbuchstaben, Zahlen, Bindestriche)</label>
       <input id="report-slug" name="slug" required maxlength="120" pattern="[a-z0-9]+(-[a-z0-9]+)*" [(ngModel)]="form.slug" (ngModelChange)="slugChanged()" [disabled]="busy()">
-      <p class="hint">Das Kuerzel bestimmt den Link. Nach der Veroeffentlichung moeglichst nicht mehr aendern.</p>
-      <label for="report-excerpt">Kurzbeschreibung (fuer Homepage und RSS)</label>
+      <p class="hint">Das Kürzel bestimmt den Link. Nach der Veröffentlichung möglichst nicht mehr ändern.</p>
+      <label for="report-excerpt">Kurzbeschreibung (für Homepage und RSS)</label>
       <textarea id="report-excerpt" name="excerpt" maxlength="1000" rows="3" [(ngModel)]="form.excerpt" (ngModelChange)="touch()" [disabled]="busy()"></textarea>
       <label for="report-destination">Reiseziel (optional)</label>
       <input id="report-destination" name="destination" maxlength="200" [(ngModel)]="form.destination" (ngModelChange)="touch()" [disabled]="busy()">
-      <h3>Englische Uebersetzung (optional)</h3>
-      <p class="hint">Leere englische Felder verwenden den deutschen Inhalt. Beide Sprachen werden gemeinsam gespeichert und veroeffentlicht.</p>
+      <h3>Englische Übersetzung (optional)</h3>
+      <p class="hint">Leere englische Felder verwenden den deutschen Inhalt. Beide Sprachen werden gemeinsam gespeichert und veröffentlicht.</p>
       <label for="report-title-en">Titel (Englisch)</label>
       <input id="report-title-en" name="titleEn" lang="en" maxlength="200" [(ngModel)]="form.titleEn" (ngModelChange)="touch()" [disabled]="busy()">
       <label for="report-excerpt-en">Kurzbeschreibung (Englisch)</label>
@@ -41,23 +41,23 @@
       </div>
       <section aria-label="Seiten des Reiseberichts">
         <h3>Berichtsseiten</h3>
-        <p>Alle Seiten werden gemeinsam gespeichert, aber einzeln veroeffentlicht. Der Seitenwechsel im Editor verwirft keine Texte oder Fotos.</p>
+        <p>Alle Seiten werden gemeinsam gespeichert, aber einzeln veröffentlicht. Der Seitenwechsel im Editor verwirft keine Texte oder Fotos.</p>
         <ol>
           @for (page of form.pages; track page.id; let i = $index) {
             <li>
               <button type="button" (click)="selectPage(i)" [attr.aria-current]="i === pageIndex ? 'true' : null" [disabled]="busy() || !!queue?.running()">
-                {{ i + 1 }}. {{ page.title || 'Ohne Seitentitel' }} · {{ currentPage(page.id)?.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }}{{ i === pageIndex ? ' (ausgewaehlt)' : '' }}
+                {{ i + 1 }}. {{ page.title || 'Ohne Seitentitel' }} · {{ currentPage(page.id)?.status === 'PUBLISHED' ? 'Veröffentlicht' : 'Entwurf' }}{{ i === pageIndex ? ' (ausgewählt)' : '' }}
               </button>
               <button type="button" (click)="movePage(i, -1)" [disabled]="busy() || !!queue?.running() || i === 0" [attr.aria-label]="'Seite ' + (i + 1) + ' nach vorne'">Vor</button>
-              <button type="button" (click)="movePage(i, 1)" [disabled]="busy() || !!queue?.running() || i === form.pages.length - 1" [attr.aria-label]="'Seite ' + (i + 1) + ' nach hinten'">Zurueck</button>
+              <button type="button" (click)="movePage(i, 1)" [disabled]="busy() || !!queue?.running() || i === form.pages.length - 1" [attr.aria-label]="'Seite ' + (i + 1) + ' nach hinten'">Zurück</button>
             </li>
           }
         </ol>
-        <button type="button" (click)="addPage()" [disabled]="busy() || !!queue?.running() || form.pages.length >= 100">Seite hinzufuegen</button>
-        <button type="button" class="danger" (click)="removePage()" [disabled]="busy() || !!queue?.running() || form.pages.length <= 1">Ausgewaehlte Seite entfernen</button>
+        <button type="button" (click)="addPage()" [disabled]="busy() || !!queue?.running() || form.pages.length >= 100">Seite hinzufügen</button>
+        <button type="button" class="danger" (click)="removePage()" [disabled]="busy() || !!queue?.running() || form.pages.length <= 1">Ausgewählte Seite entfernen</button>
       </section>
       <h3>Seite {{ pageIndex + 1 }} von {{ form.pages.length }}</h3>
-      <p>{{ currentPage()?.status === 'PUBLISHED' ? 'Diese Seite ist veroeffentlicht.' : 'Diese Seite ist ein privater Entwurf.' }}</p>
+      <p>{{ currentPage()?.status === 'PUBLISHED' ? 'Diese Seite ist veröffentlicht.' : 'Diese Seite ist ein privater Entwurf.' }}</p>
       <label for="report-page-title">Seitentitel (optional)</label>
       <input id="report-page-title" name="pageTitle" maxlength="200" [(ngModel)]="activePage.title" (ngModelChange)="touch()" [disabled]="busy()">
       <label for="report-page-title-en">Seitentitel (Englisch, optional)</label>
@@ -77,39 +77,39 @@
       <p class="hint">Maximal 100 Seiten, je Sprache insgesamt 100000 UTF-8-Bytes Berichtstext und 100 verschiedene Reisebilder pro Bericht. Externe Bilder, Links und eingebettete Inhalte werden entfernt.</p>
       <div class="report-images">
         <h3>Bilder im Text und Galerie dieser Seite</h3>
-        <p>Im Editor die Einfuegeposition anklicken, dann ein Bild waehlen und „Im Text einfuegen“ verwenden.
-          Die Bildunterschrift unter dem eingefuegten Bild ist im Editor bearbeitbar.
-          Galerie und Text koennen dasselbe Bild verwenden.</p>
+        <p>Im Editor die Einfügeposition anklicken, dann ein Bild wählen und „Im Text einfügen“ verwenden.
+          Die Bildunterschrift unter dem eingefügten Bild ist im Editor bearbeitbar.
+          Galerie und Text können dasselbe Bild verwenden.</p>
         <label for="report-image">Vorhandenes Reisebild</label>
         <select id="report-image" name="reportImage" [(ngModel)]="selectedImageId" [disabled]="busy() || imageLoading()">
-          <option value="">Bitte waehlen</option>
+          <option value="">Bitte wählen</option>
           @for (image of reportImages(); track image.id) { <option [value]="image.id">{{ imageName(image.id) }}</option> }
         </select>
-        <label for="report-image-caption">Bildunterschrift beim Einfuegen (optional)</label>
+        <label for="report-image-caption">Bildunterschrift beim Einfügen (optional)</label>
         <input id="report-image-caption" name="imageCaption" [(ngModel)]="imageCaption" maxlength="500" [disabled]="busy()">
-        <label for="report-image-caption-en">Bildunterschrift beim Einfuegen (Englisch, optional)</label>
+        <label for="report-image-caption-en">Bildunterschrift beim Einfügen (Englisch, optional)</label>
         <input id="report-image-caption-en" name="imageCaptionEn" lang="en" [(ngModel)]="imageCaptionEn" maxlength="500" [disabled]="busy()">
-        <label for="report-image-size">Bildgroesse im Text</label>
+        <label for="report-image-size">Bildgrösse im Text</label>
         <select id="report-image-size" name="imageSize" [(ngModel)]="imageSize" [disabled]="busy() || !!queue?.running()">
           <option [ngValue]="100">Klein (100 x 100 Pixel)</option>
           <option [ngValue]="250">Mittel (250 x 250 Pixel)</option>
           <option [ngValue]="500">Gross (500 x 500 Pixel)</option>
         </select>
-        <p class="hint">Das ganze Foto wird ohne Beschnitt oder Verzerrung eingepasst. Zum spaeteren Aendern im Editor das Bild markieren
-          oder seine Bildunterschrift anklicken und oben eine Bildgroesse waehlen. Die Grossansicht bleibt unveraendert.</p>
+        <p class="hint">Das ganze Foto wird ohne Beschnitt oder Verzerrung eingepasst. Zum späteren Ändern im Editor das Bild markieren
+          oder seine Bildunterschrift anklicken und oben eine Bildgrösse wählen. Die Grossansicht bleibt unverändert.</p>
         <div class="actions">
-          <button type="button" (click)="insertImage()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im Text einfuegen</button>
-          <button type="button" (click)="insertImage(true)" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im englischen Text einfuegen</button>
-          <button type="button" (click)="addSelectedGallery()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Zur Seitengalerie hinzufuegen</button>
+          <button type="button" (click)="insertImage()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im Text einfügen</button>
+          <button type="button" (click)="insertImage(true)" [disabled]="busy() || !selectedImageId || !!queue?.running()">Im englischen Text einfügen</button>
+          <button type="button" (click)="addSelectedGallery()" [disabled]="busy() || !selectedImageId || !!queue?.running()">Zur Seitengalerie hinzufügen</button>
           <button type="button" (click)="loadImages(imagePage - 1)" [disabled]="busy() || imageLoading() || imagePage <= 1">Vorherige Reisebild-Auswahl</button>
-          <button type="button" (click)="loadImages(imagePage + 1)" [disabled]="busy() || imageLoading() || imagePage * 20 >= imageTotal()">Naechste Reisebild-Auswahl</button>
+          <button type="button" (click)="loadImages(imagePage + 1)" [disabled]="busy() || imageLoading() || imagePage * 20 >= imageTotal()">Nächste Reisebild-Auswahl</button>
           <button type="button" (click)="loadImages()" [disabled]="busy() || imageLoading()">Reisebilder neu laden</button>
         </div>
         <p>Bildauswahl Seite {{ imagePage }} · {{ imageTotal() }} Reisebilder. Bereits zugeordnete Bilder bleiben in der Auswahl.</p>
         <ol>
           @for (image of activePage.galleryImages; track image.assetId; let i = $index) {
             <li>
-              <img class="report-image-preview" [src]="'/api/admin/media/' + image.assetId + '/image'" [alt]="imageName(image.assetId)" loading="lazy" (error)="error.set('Ein Reisebild konnte nicht geladen werden. Bitte Upload-Speicher pruefen.')">
+              <img class="report-image-preview" [src]="'/api/admin/media/' + image.assetId + '/image'" [alt]="imageName(image.assetId)" loading="lazy" (error)="error.set('Ein Reisebild konnte nicht geladen werden. Bitte Upload-Speicher prüfen.')">
               <strong>{{ imageName(image.assetId) }}</strong>
               <label>Galerie-Bildunterschrift <input [name]="'caption-' + image.assetId" [(ngModel)]="image.caption" (ngModelChange)="touch()" maxlength="500" [disabled]="busy()"></label>
               <label>Galerie-Bildunterschrift (Englisch) <input [name]="'caption-en-' + image.assetId" lang="en" [(ngModel)]="image.captionEn" (ngModelChange)="touch()" maxlength="500" [disabled]="busy()"></label>
@@ -121,33 +121,33 @@
             </li>
           }
         </ol>
-        <p class="hint">Entfernen aus der Galerie entfernt keine Bilder im Text. Dort das Bild im Editor markieren und loeschen.
-          Bilddateien bleiben in der Bildverwaltung. Erst Speichern uebernimmt die Zuordnung.</p>
+        <p class="hint">Entfernen aus der Galerie entfernt keine Bilder im Text. Dort das Bild im Editor markieren und löschen.
+          Bilddateien bleiben in der Bildverwaltung. Erst Speichern übernimmt die Zuordnung.</p>
         <app-upload-queue category="TRAVEL" inputId="report-upload-files" [disabled]="busy()" (uploaded)="uploaded($event)" />
-        <p class="hint">Hier hochgeladene Bilder werden zur ungespeicherten Galerie der ausgewaehlten Seite hinzugefuegt.
-          Fuer „nur im Text“ anschliessend aus der Galerie entfernen. Entwurfsbilder sind nicht oeffentlich.
-          Ein in mehreren Berichten verwendetes Bild bleibt ueber andere veroeffentlichte Berichte erreichbar.</p>
+        <p class="hint">Hier hochgeladene Bilder werden zur ungespeicherten Galerie der ausgewählten Seite hinzugefügt.
+          Für „nur im Text“ anschliessend aus der Galerie entfernen. Entwurfsbilder sind nicht öffentlich.
+          Ein in mehreren Berichten verwendetes Bild bleibt über andere veröffentlichte Berichte erreichbar.</p>
       </div>
-      @if (dirty()) { <p role="status">Ungespeicherte Aenderungen</p> }
+      @if (dirty()) { <p role="status">Ungespeicherte Änderungen</p> }
       <div class="actions">
         <button type="submit" [disabled]="busy() || reportForm.invalid || !!queue?.running()">Speichern</button>
         @if (current(); as report) {
           @if (currentPage(); as savedPage) {
             <button type="button" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changePageStatus(savedPage.status !== 'PUBLISHED')">
-              {{ savedPage.status === 'PUBLISHED' ? 'Seite zuruecknehmen' : 'Seite veroeffentlichen' }}
+              {{ savedPage.status === 'PUBLISHED' ? 'Seite zurücknehmen' : 'Seite veröffentlichen' }}
             </button>
           }
           @if (report.status === 'PUBLISHED') {
-            <button type="button" class="secondary" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changeStatus(false)">Alle Seiten zuruecknehmen</button>
+            <button type="button" class="secondary" [disabled]="busy() || dirty() || !!queue?.running()" (click)="changeStatus(false)">Alle Seiten zurücknehmen</button>
           }
           @if (report.status === 'DRAFT') {
-            <button type="button" class="danger" [disabled]="busy() || dirty() || !!queue?.running()" (click)="delete()">Entwurf loeschen</button>
+            <button type="button" class="danger" [disabled]="busy() || dirty() || !!queue?.running()" (click)="delete()">Entwurf löschen</button>
           }
           <button type="button" class="secondary" [disabled]="busy()" (click)="open(report.id)">Gespeicherte Version neu laden</button>
         }
         <button type="button" class="secondary" [disabled]="busy()" (click)="close()">Schliessen</button>
       </div>
-      <p class="hint">Vor Veroeffentlichung oder Ruecknahme erst speichern. Es wird nicht automatisch gespeichert.</p>
+      <p class="hint">Vor Veröffentlichung oder Rücknahme erst speichern. Es wird nicht automatisch gespeichert.</p>
     </form>
   }
   @if (!mode) {
@@ -156,7 +156,7 @@
     @if (!reports.items.length) { <p>Noch keine Reiseberichte auf dieser Seite.</p> }
     <ul class="report-list">
       @for (report of reports.items; track report.id) {
-        <li><div><strong>{{ report.title }}</strong><p>{{ report.status === 'PUBLISHED' ? 'Veroeffentlicht' : 'Entwurf' }} &middot; {{ report.slug }}</p></div>
+        <li><div><strong>{{ report.title }}</strong><p>{{ report.status === 'PUBLISHED' ? 'Veröffentlicht' : 'Entwurf' }} &middot; {{ report.slug }}</p></div>
           <a class="button-link secondary" [routerLink]="['/reiseberichte', report.id]">Bearbeiten</a>
         </li>
       }
@@ -164,7 +164,7 @@
     <div class="actions">
       <button type="button" [disabled]="loading() || page <= 1" (click)="load(page - 1)">Vorherige Seite</button>
       <span>Seite {{ page }} &middot; {{ reports.total }} Berichte</span>
-      <button type="button" [disabled]="loading() || page * reports.pageSize >= reports.total" (click)="load(page + 1)">Naechste Seite</button>
+      <button type="button" [disabled]="loading() || page * reports.pageSize >= reports.total" (click)="load(page + 1)">Nächste Seite</button>
     </div>
   } @else if (!loading()) {
     <button type="button" (click)="load()">Liste erneut laden</button>

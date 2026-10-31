@@ -13,14 +13,14 @@ function viewerElements() {
   const next = dialog?.querySelector<HTMLButtonElement>('[data-photo-viewer-next]');
   const position = dialog?.querySelector<HTMLElement>('[data-photo-viewer-position]');
   if (!dialog || !image || !status || !navigation || !previous || !next || !position) {
-    throw new Error('Die Foto-Grossansicht ist unvollstaendig.');
+    throw new Error('Die Foto-Grossansicht ist unvollständig.');
   }
   return { dialog, image, status, navigation, previous, next, position };
 }
 
 function showActivePhoto() {
   const photo = activePhotos[activeIndex];
-  if (!photo) throw new Error('Das ausgewaehlte Foto ist nicht in der Fotogruppe.');
+  if (!photo) throw new Error('Das ausgewählte Foto ist nicht in der Fotogruppe.');
   const { image, status, navigation, previous, next, position } = viewerElements();
   navigation.hidden = activePhotos.length <= 1;
   previous.disabled = activeIndex === 0;
@@ -93,7 +93,7 @@ export function enablePhotoViewer(root: HTMLElement) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'photo-zoom';
-    button.setAttribute('aria-label', t(`Foto vergroessern: ${photo.alt}`, `Enlarge photo: ${photo.alt}`));
+    button.setAttribute('aria-label', t(`Foto vergrössern: ${photo.alt}`, `Enlarge photo: ${photo.alt}`));
     button.setAttribute('aria-haspopup', 'dialog');
     photo.replaceWith(button);
     button.append(photo);

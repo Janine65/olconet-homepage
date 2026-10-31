@@ -7,7 +7,7 @@ const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 function inlineImageSize(value: string | undefined) {
   if (value === undefined) return '250';
   if (value !== '100' && value !== '250' && value !== '500') {
-    throw new BadRequestException('Bildgroesse muss 100, 250 oder 500 Pixel sein.');
+    throw new BadRequestException('Bildgrösse muss 100, 250 oder 500 Pixel sein.');
   }
   return value;
 }
@@ -56,7 +56,7 @@ export function publicContent(html: string, slug: string, assets: { id: string; 
 export function record(body: unknown, keys: string[]): Record<string, unknown> {
   if (!body || typeof body !== 'object' || Array.isArray(body) ||
     Object.keys(body).some((key) => !keys.includes(key))) {
-    throw new BadRequestException('Ungueltige Berichtsdaten oder unbekannte Felder.');
+    throw new BadRequestException('Ungültige Berichtsdaten oder unbekannte Felder.');
   }
   return Object.fromEntries(Object.entries(body));
 }
@@ -75,14 +75,14 @@ function date(value: unknown, name: string): Date | null {
   }
   const parsed = new Date(`${value}T00:00:00.000Z`);
   if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-    throw new BadRequestException(`${name} ist kein gueltiges Datum.`);
+    throw new BadRequestException(`${name} ist kein gültiges Datum.`);
   }
   return parsed;
 }
 
 export function reportVersion(value: unknown): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
-    throw new BadRequestException('Eine gueltige Berichtsversion ist erforderlich.');
+    throw new BadRequestException('Eine gültige Berichtsversion ist erforderlich.');
   }
   return value;
 }
@@ -122,14 +122,14 @@ export function reportInput(body: unknown, updating = false) {
     'galleryImages', 'pages', 'titleEn', 'excerptEn', 'destinationEn',
     ...(updating ? ['version'] : [])]);
   const title = text(input['title'], 'Titel', 200);
-  const slug = text(input['slug'], 'URL-Kuerzel', 120);
+  const slug = text(input['slug'], 'URL-Kürzel', 120);
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new BadRequestException('Das URL-Kuerzel darf nur Kleinbuchstaben, Zahlen und einzelne Bindestriche enthalten.');
+    throw new BadRequestException('Das URL-Kürzel darf nur Kleinbuchstaben, Zahlen und einzelne Bindestriche enthalten.');
   }
   const excerpt = text(input['excerpt'], 'Kurzbeschreibung', 1000, false);
   const legacy = input['pages'] === undefined;
   if (!legacy && (input['contentHtml'] !== undefined || input['galleryImages'] !== undefined)) {
-    throw new BadRequestException('Seiten und alte Berichtsinhalte duerfen nicht gleichzeitig uebergeben werden.');
+    throw new BadRequestException('Seiten und alte Berichtsinhalte dürfen nicht gleichzeitig übergeben werden.');
   }
   const rawPages = legacy ? [{ contentHtml: input['contentHtml'], galleryImages: input['galleryImages'] }] : input['pages'];
   if (!Array.isArray(rawPages) || rawPages.length < 1 || rawPages.length > 100) {
@@ -140,10 +140,10 @@ export function reportInput(body: unknown, updating = false) {
     throw new BadRequestException('Jede Seiten-ID darf nur einmal vorkommen.');
   }
   if (pages.reduce((total, page) => total + page.contentBytes, 0) > 100000) {
-    throw new BadRequestException('Alle Berichtstexte zusammen duerfen maximal 100000 UTF-8-Bytes enthalten.');
+    throw new BadRequestException('Alle Berichtstexte zusammen dürfen maximal 100000 UTF-8-Bytes enthalten.');
   }
   if (pages.reduce((total, page) => total + page.contentBytesEn, 0) > 100000) {
-    throw new BadRequestException('Alle englischen Berichtstexte zusammen duerfen maximal 100000 UTF-8-Bytes enthalten.');
+    throw new BadRequestException('Alle englischen Berichtstexte zusammen dürfen maximal 100000 UTF-8-Bytes enthalten.');
   }
   const imageIds = [...new Set(pages.flatMap(page => page.imageIds))];
   if (imageIds.length > 100) throw new BadRequestException('Maximal 100 verschiedene Bilder pro Bericht erlaubt.');
@@ -173,13 +173,13 @@ export function requirePublishable(data: { excerpt: string; contentHtml: string;
   const plainText = sanitizeHtml(data.contentHtml, { allowedTags: [], allowedAttributes: {} })
     .replace(/&(?:nbsp|#160);/g, ' ').trim();
   if (!data.excerpt.trim() || (!plainText && !data.imageIds?.length)) {
-    throw new BadRequestException('Vor der Veroeffentlichung sind Kurzbeschreibung und Text oder Fotos auf der Seite erforderlich.');
+    throw new BadRequestException('Vor der Veröffentlichung sind Kurzbeschreibung und Text oder Fotos auf der Seite erforderlich.');
   }
 }
 
 export function reportId(value: string) {
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value)) {
-    throw new BadRequestException('Ungueltige Berichts-ID.');
+    throw new BadRequestException('Ungültige Berichts-ID.');
   }
   return value;
 }
@@ -187,7 +187,7 @@ export function reportId(value: string) {
 export function pageNumber(value: unknown) {
   if (value === undefined) return 1;
   if (typeof value !== 'string' || !/^[1-9]\d{0,5}$/.test(value)) {
-    throw new BadRequestException('Ungueltige Seitennummer.');
+    throw new BadRequestException('Ungültige Seitennummer.');
   }
   return Number(value);
 }

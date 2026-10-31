@@ -7,7 +7,7 @@ import { visitorTotals } from './visitors.controller';
 function packageVersion(path: string) {
   const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
   if (!data || typeof data !== 'object' || !('version' in data) || typeof data.version !== 'string' || !data.version.trim()) {
-    throw new Error(`Ungueltige Paketversion: ${path}`);
+    throw new Error(`Ungültige Paketversion: ${path}`);
   }
   return data.version;
 }

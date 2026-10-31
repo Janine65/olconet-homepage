@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
       if (request.headers.origin !== origin ||
         request.headers['x-olconet-request'] !== '1' ||
         !request.is(multipart ? 'multipart/form-data' : 'application/json')) {
-        throw new ForbiddenException('Ungueltiger Ursprung oder ungueltiges Anfrageformat.');
+        throw new ForbiddenException('Ungültiger Ursprung oder ungültiges Anfrageformat.');
       }
     }
     if (this.reflector.getAllAndOverride<boolean>(PUBLIC_ROUTE, [context.getHandler(), context.getClass()])) {

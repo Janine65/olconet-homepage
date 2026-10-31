@@ -64,7 +64,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal(list.items[0].id, report.id);
     assert.equal('contentHtml' in list.items[0], false);
   });
-  await t.test('Leerer Entwurf laesst sich nicht veroeffentlichen; ungueltige Eingaben und Slug-Konflikte werden gemeldet', async () => {
+  await t.test('Leerer Entwurf lässt sich nicht veröffentlichen; ungültige Eingaben und Slug-Konflikte werden gemeldet', async () => {
     assert.equal((await post(`/api/admin/reports/${report.id}/publish`, { version: 0 })).status, 400);
     assert.equal((await post('/api/admin/reports', input)).status, 409);
     assert.equal((await post('/api/admin/reports', { ...input, authorId: 'spoof' })).status, 400);
@@ -72,7 +72,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal((await get('/api/admin/reports/not-a-uuid', true)).status, 400);
   });
   const complete = { ...input, excerpt: 'Seen & Berge', contentHtml: '<h2>Unterwegs</h2><p onclick="bad">Hallo <strong>Schweiz</strong><script>bad()</script><img src=x onerror=bad></p>' };
-  await t.test('Speichern bereinigt HTML serverseitig und erhoeht die Version', async () => {
+  await t.test('Speichern bereinigt HTML serverseitig und erhöht die Version', async () => {
     const saved = await post(`/api/admin/reports/${report.id}/save`, { ...complete, version: report.version });
     assert.equal(saved.status, 201);
     report = await saved.json();
@@ -81,7 +81,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal((await get(`/api/admin/reports/${report.id}`, true)).status, 200);
     assert.equal((await get(`/api/public/reports/${report.slug}`)).status, 404);
   });
-  await t.test('Laengere Editor-Texte ueber dem frueheren 8-KB-Limit sind speicherbar', async () => {
+  await t.test('Längere Editor-Texte über dem früheren 8-KB-Limit sind speicherbar', async () => {
     const contentHtml = `<p>${'x'.repeat(20000)}</p>`;
     const saved = await post(`/api/admin/reports/${report.id}/save`, { ...complete, contentHtml, version: report.version });
     assert.equal(saved.status, 201);
@@ -91,12 +91,12 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal(restored.status, 201);
     report = await restored.json();
   });
-  await t.test('Veraltete Versionen ueberschreiben keine Aenderungen', async () => {
+  await t.test('Veraltete Versionen überschreiben keine Änderungen', async () => {
     assert.equal((await post(`/api/admin/reports/${report.id}/save`, { ...complete, title: 'Falsch', version: 0 })).status, 409);
     assert.equal((await post(`/api/admin/reports/${report.id}/publish`, { version: 0 })).status, 409);
     assert.equal((await get(`/api/admin/reports/${report.id}`, true)).status, 200);
   });
-  await t.test('Veroeffentlichung erscheint in Public-API und RSS ohne private Felder', async () => {
+  await t.test('Veröffentlichung erscheint in Public-API und RSS ohne private Felder', async () => {
     const published = await post(`/api/admin/reports/${report.id}/publish`, { version: report.version });
     assert.equal(published.status, 201);
     report = await published.json();
@@ -116,7 +116,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.ok(xml.includes(`urn:olconet:travel:${report.id}`));
     assert.match(xml, /http:\/\/localhost:18431\/reisen\/bericht\/\?slug=schweiz-berge/);
   });
-  await t.test('Veroeffentlichte Berichte brauchen weiter Inhalt und lassen sich nicht direkt loeschen', async () => {
+  await t.test('Veröffentlichte Berichte brauchen weiter Inhalt und lassen sich nicht direkt löschen', async () => {
     assert.equal((await post(`/api/admin/reports/${report.id}/save`, { ...input, version: report.version })).status, 400);
     assert.equal((await post(`/api/admin/reports/${report.id}/delete`, { version: report.version })).status, 400);
     const publishedAt = report.publishedAt;
@@ -128,7 +128,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal(report.publishedAt, publishedAt);
     assert.equal((await (await get(`/api/public/reports/${report.slug}`)).json()).contentHtml, '<p>Aktualisiert</p>');
   });
-  await t.test('Gleichzeitige Aenderungen: genau eine Speicherung gewinnt', async () => {
+  await t.test('Gleichzeitige Änderungen: genau eine Speicherung gewinnt', async () => {
     const responses = await Promise.all([
       post(`/api/admin/reports/${report.id}/save`, { ...complete, title: 'A', version: report.version }),
       post(`/api/admin/reports/${report.id}/save`, { ...complete, title: 'B', version: report.version }),
@@ -136,7 +136,7 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.deepEqual(responses.map((response) => response.status).sort(), [201, 409]);
     report = await (await get(`/api/admin/reports/${report.id}`, true)).json();
   });
-  await t.test('Ruecknahme entfernt den Bericht aus Homepage-API und RSS', async () => {
+  await t.test('Rücknahme entfernt den Bericht aus Homepage-API und RSS', async () => {
     const removed = await post(`/api/admin/reports/${report.id}/unpublish`, { version: report.version });
     assert.equal(removed.status, 201);
     report = await removed.json();
@@ -146,12 +146,12 @@ test('Reisebericht-Lebenszyklus in isoliertem PostgreSQL', async (t) => {
     assert.equal((await (await get('/api/public/reports')).json()).total, 0);
     assert.doesNotMatch(await (await get('/api/public/reports/rss')).text(), /<item>/);
   });
-  await t.test('Loeschen erfordert die aktuelle Entwurfsversion', async () => {
+  await t.test('Löschen erfordert die aktuelle Entwurfsversion', async () => {
     assert.equal((await post(`/api/admin/reports/${report.id}/delete`, { version: 0 })).status, 409);
     assert.equal((await post(`/api/admin/reports/${report.id}/delete`, { version: report.version })).status, 201);
     assert.equal((await get(`/api/admin/reports/${report.id}`, true)).status, 404);
   });
-  await t.test('Seitengroesse ist 20 und oeffentliche Listen enthalten nur Veroeffentlichungen', async () => {
+  await t.test('Seitengrösse ist 20 und öffentliche Listen enthalten nur Veröffentlichungen', async () => {
     await prisma.travelReport.createMany({
       data: Array.from({ length: 22 }, (_, i) => ({
         authorId: admin.id, title: `Bericht ${i}`, slug: `bericht-${i}`, excerpt: 'Test',

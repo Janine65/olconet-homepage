@@ -82,7 +82,7 @@ export class MediaComponent implements OnInit {
     const id = this.selected.id;
     await this.run(async () => {
       this.accept(await this.auth.request<Asset>(`/api/admin/media/${id}`));
-      if (added) { this.success.set('Fotos zur Fotogruppe hinzugefuegt.'); this.changed.emit(); }
+      if (added) { this.success.set('Fotos zur Fotogruppe hinzugefügt.'); this.changed.emit(); }
     });
   }
   openSorting(category: 'DRAWING' | 'SAMMY') {
@@ -102,7 +102,7 @@ export class MediaComponent implements OnInit {
     input.value = '';
     if (this.file && this.file.size > 10 * 1024 * 1024) {
       this.file = null;
-      this.error.set('Das Bild ist groesser als 10 MiB.');
+      this.error.set('Das Bild ist grösser als 10 MiB.');
     }
   }
   edit(asset: Asset) {
@@ -140,7 +140,7 @@ export class MediaComponent implements OnInit {
       if (this.selected) {
         await this.auth.request(`/api/admin/media/${this.selected.id}/save`, { ...metadata, revision: this.selected.revision });
       } else {
-        if (!this.file) throw new Error('Bitte eine Bilddatei auswaehlen.');
+        if (!this.file) throw new Error('Bitte eine Bilddatei auswählen.');
         const body = new FormData();
         body.append('file', this.file);
         body.append('metadata', JSON.stringify(metadata));
@@ -157,16 +157,16 @@ export class MediaComponent implements OnInit {
     if (!this.canLeave(false)) return;
     const subject = asset.children.length ? `Fotogruppe mit ${asset.children.length + 1} Fotos` : 'Bild';
     const prompts = {
-      publish: `${subject} "${asset.title}" oeffentlich veroeffentlichen?`,
-      unpublish: `${subject} "${asset.title}" aus der oeffentlichen Galerie entfernen?`,
-      delete: `${subject} "${asset.title}" und alle zugehoerigen Bilddateien unwiderruflich loeschen?`,
+      publish: `${subject} "${asset.title}" öffentlich veröffentlichen?`,
+      unpublish: `${subject} "${asset.title}" aus der öffentlichen Galerie entfernen?`,
+      delete: `${subject} "${asset.title}" und alle zugehörigen Bilddateien unwiderruflich löschen?`,
     };
     if (!confirm(prompts[action])) return;
     await this.run(async () => {
       await this.auth.request(`/api/admin/media/${asset.id}/${action}`, { revision: asset.revision });
       this.reset();
       const label = asset.children.length ? 'Fotogruppe' : 'Bild';
-      this.success.set(action === 'publish' ? `${label} veroeffentlicht.` : action === 'unpublish' ? 'Veroeffentlichung zurueckgenommen.' : `${label} geloescht.`);
+      this.success.set(action === 'publish' ? `${label} veröffentlicht.` : action === 'unpublish' ? 'Veröffentlichung zurückgenommen.' : `${label} gelöscht.`);
       this.changed.emit();
       await this.load();
     });
