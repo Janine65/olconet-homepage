@@ -7,10 +7,11 @@
     "node": ">=24.15.0 <25"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "pnpm --parallel --filter './apps/*' dev",
     "build": "pnpm --filter @olconet/backend db:generate && pnpm -r build",
     "check": "pnpm --filter @olconet/backend db:generate && pnpm -r check",
-    "test": "node --test infrastructure/static-server.test.mjs infrastructure/visitor-proxy.test.mjs && pnpm --filter @olconet/backend test",
+    "test": "node --test infrastructure/static-server.test.mjs infrastructure/visitor-proxy.test.mjs infrastructure/bump-staged-versions.test.mjs && pnpm --filter @olconet/backend test",
     "test:docker": "node --test infrastructure/compose.test.mjs",
     "test:integration": "node infrastructure/run-auth-integration.mjs",
     "docker:build:mac": "pnpm build && docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml build homepage admin backend",

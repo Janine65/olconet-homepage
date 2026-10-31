@@ -503,6 +503,22 @@ Alle deutschen und englischen Seiten zeigen die Version aus der zentralen
 `package.json`. Ein Neubuild uebernimmt eine geaenderte Version automatisch,
 auch im Docker-Image.
 
+### Automatische Paketversionen
+
+Jedes Paket unter `apps/` fuehrt seine eigene Version. Ein Pre-Commit-Hook
+(`.githooks/pre-commit`, Skript `infrastructure/bump-staged-versions.mjs`)
+hebt beim Commit die **Patch**-Version jedes Pakets an, dessen Ordner
+gestagte Aenderungen enthaelt, und staged die angepasste `package.json` mit.
+Der Hook wird durch `pnpm install` aktiviert (`prepare` setzt
+`git config core.hooksPath .githooks`).
+
+Manuelle Versionsschritte bleiben moeglich: Wird die Version eines Pakets im
+selben Commit bereits von Hand geaendert (z. B. Minor oder Major), laesst der
+Hook sie unveraendert. Merge-Commits und der allererste Commit werden nicht
+angehoben; `git commit --no-verify` ueberspringt den Hook (empfohlen bei
+`--amend`, da ein Amend sonst erneut anhebt). Die zentrale Release-Version
+im Wurzel-`package.json` wird weiterhin manuell mit `pnpm version` gepflegt.
+
 Der Besucherzaehler erfasst **Browser-Sitzungen**, nicht Seitenaufrufe oder
 eindeutig identifizierte Personen. Ein HttpOnly-/SameSite=Strict-Sitzungscookie
 `olconet_visit` verhindert erneutes Zaehlen bei Seitenwechseln und Neuladen

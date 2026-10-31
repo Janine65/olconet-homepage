@@ -10,6 +10,8 @@ coverage/
 .DS_Store
 apps/backend/src/generated/
 olconet-images.tar
+# Symlinks auf die NAS-Deployment-Dateien (/Volumes/server/olconet)
+infrastructure/compose.yaml
 uploads/
 apps/backend/.agents/skills/prisma-cli/SKILL.md
 apps/backend/.agents/skills/prisma-cli/references/agent-safety.md

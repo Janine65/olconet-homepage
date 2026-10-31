@@ -1,0 +1,2 @@
+#!/bin/sh
+node infrastructure/bump-staged-versions.mjs
