@@ -1,8 +1,16 @@
 packages:
   - apps/*
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@prisma/engines'
-  - esbuild
-  - prisma
-  - sharp
+
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  esbuild: true
+  lmdb: false
+  msgpackr-extract: false
+  prisma: true
+  sharp: true
+
+permissions:
+  dotenv:
+    skills: false
