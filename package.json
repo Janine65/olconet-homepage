@@ -18,7 +18,7 @@
     "docker:run:mac": "docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml run --rm --no-deps migrate && docker compose --env-file .env.docker.mac -f compose.yaml -f compose.mac.yaml up -d --wait --no-build homepage admin backend",
     "docker:build:synology": "docker compose --env-file .env.docker.synology -f compose.yaml build homepage admin backend",
     "docker:push:synology": "docker compose --env-file .env.docker.synology -f compose.yaml push homepage admin backend",
-    "docker:build-push:synology": "pnpm run docker:build:synology && pnpm run docker:push:synology",
+    "docker:prod": "pnpm run docker:build:synology && pnpm run docker:push:synology",
     "db:generate": "pnpm --filter @olconet/backend db:generate",
     "db:migrate": "pnpm --filter @olconet/backend db:migrate",
     "db:deploy": "pnpm --filter @olconet/backend db:deploy",
