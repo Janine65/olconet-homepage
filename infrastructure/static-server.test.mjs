@@ -118,7 +118,9 @@ test('homepage proxy replaces forged visitor proofs with its own signed classifi
   const backend = createServer((request, response) => {
     const proof = request.headers['x-olconet-visitor-proof'];
     assert.match(proof, /:external$/);
-    assert.equal(request.headers['x-olconet-visitor-signature'], createHmac('sha256', secret).update(proof).digest('hex'));
+    assert.equal(request.headers['x-olconet-visitor-ip'], '198.51.100.20');
+    assert.equal(request.headers['x-olconet-visitor-signature'],
+      createHmac('sha256', secret).update(`${proof}\n198.51.100.20`).digest('hex'));
     assert.equal(request.headers['x-forwarded-for'], undefined);
     response.setHeader('Content-Type', 'application/json');
     response.end('{"total":1,"enabled":true}');

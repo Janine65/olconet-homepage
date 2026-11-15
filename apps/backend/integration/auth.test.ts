@@ -124,25 +124,34 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     assert.deepEqual(await overview.json(), { reports: 0, drawings: 0, sammyPhotos: 0 });
   });
 
-  await t.test('Systeminfo zeigt exakte Paketversionen und liest Besuche ohne neue Sitzung', async () => {
-    const visit = await prisma.visitorSession.create({ data: { id: '12345678-1234-4123-8123-123456789abc' } });
-    try {
-      const version = (path: string) => JSON.parse(readFileSync(path, 'utf8')).version;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const response = await fetch(`${base}/api/admin/system`, { headers: { Cookie: cookie } });
-        assert.equal(response.status, 200);
-        assert.equal(response.headers.get('cache-control'), 'no-store');
-        assert.equal(response.headers.get('set-cookie'), null);
-        assert.deepEqual(await response.json(), {
-          versions: {
-            release: version('../../package.json'), homepage: version('../homepage/package.json'),
-            admin: version('../admin/package.json'), backend: version('package.json'),
-          },
-          visitors: { total: 1, enabled: false },
-        });
-      }
-      assert.equal(await prisma.visitorSession.count(), 1);
-    } finally { await prisma.visitorSession.delete({ where: { id: visit.id } }); }
+  await t.test('Besucherstatistik ist geschützt und liefert den angefragten Zeitraum', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    assert.equal((await fetch(`${base}/api/admin/visitors?from=${today}&to=${today}`)).status, 401);
+    const response = await fetch(`${base}/api/admin/visitors?from=${today}&to=${today}`, { headers: { Cookie: cookie } });
+    assert.equal(response.status, 200);
+    const report = await response.json();
+    assert.equal(report.from, today);
+    assert.equal(report.to, today);
+    assert.equal(report.totalSessions, 0);
+    assert.equal(report.totalPageViews, 0);
+    assert.equal(report.enabled, false);
+    assert.equal((await fetch(`${base}/api/admin/visitors?from=invalid&to=${today}`, { headers: { Cookie: cookie } })).status, 400);
+  });
+
+  await t.test('Systeminfo zeigt die exakten Paketversionen ohne Besuchserfassung', async () => {
+    const version = (path: string) => JSON.parse(readFileSync(path, 'utf8')).version;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await fetch(`${base}/api/admin/system`, { headers: { Cookie: cookie } });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(response.headers.get('set-cookie'), null);
+      assert.deepEqual(await response.json(), {
+        versions: {
+          release: version('../../package.json'), homepage: version('../homepage/package.json'),
+          admin: version('../admin/package.json'), backend: version('package.json'),
+        },
+      });
+    }
     assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Cookie: 'olconet_session=forged' } })).status, 401);
   });
 

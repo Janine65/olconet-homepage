@@ -26,7 +26,7 @@ export function visitorProxyConfig(env) {
 }
 
 export function visitorHeaders(request, config) {
-  if (!config.secret || !config.excluded.length || !config.trusted.length) return {};
+  if (!config.secret || !config.trusted.length) return {};
   const peer = normalizeIp(request.socket.remoteAddress);
   // Only a configured immediate proxy may supply the original client address.
   const forwarded = request.headers['x-forwarded-for'];
@@ -36,8 +36,10 @@ export function visitorHeaders(request, config) {
   if (!isIP(ip)) return {};
   const excluded = config.excluded.includes(ip) || config.local.check(ip, isIP(ip) === 4 ? 'ipv4' : 'ipv6');
   const proof = `${Date.now()}:${excluded ? 'excluded' : 'external'}`;
+  const signedIp = excluded ? '' : ip;
   return {
     'x-olconet-visitor-proof': proof,
-    'x-olconet-visitor-signature': createHmac('sha256', config.secret).update(proof).digest('hex'),
+    ...(signedIp ? { 'x-olconet-visitor-ip': signedIp } : {}),
+    'x-olconet-visitor-signature': createHmac('sha256', config.secret).update(`${proof}\n${signedIp}`).digest('hex'),
   };
 }

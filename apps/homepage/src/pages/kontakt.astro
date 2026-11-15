@@ -7,7 +7,35 @@ const t = translations(lang);
 ---
 <Layout title={t('Kontakt', 'Contact')} lang={lang}>
   <h1>{t('Kontakt', 'Contact')}</h1>
-  <p>{t('Schreib mir an', 'Write to me at')} <a href="mailto:janine@olconet.com">janine@olconet.com</a>.</p>
-  <p>{t('Das Kontaktformular mit Mailversand und Spam-Schutz folgt. Aktuell werden auf dieser Seite keine Nachrichten entgegengenommen.',
-    'A contact form with email delivery and spam protection is planned. This page does not currently accept messages.')}</p>
+  <p>{t('Du kannst mir auch direkt an', 'You can also write to me directly at')} <a href="mailto:janine@olconet.com">janine@olconet.com</a> mailen.</p>
+  <form id="contact-form">
+    <fieldset disabled>
+      <label for="contact-name">{t('Name', 'Name')}</label>
+      <input id="contact-name" name="name" autocomplete="name" required maxlength="100" />
+      <label for="contact-email">{t('E-Mail-Adresse', 'Email address')}</label>
+      <input id="contact-email" name="email" type="email" autocomplete="email" required maxlength="254" />
+      <label for="contact-message">{t('Nachricht', 'Message')}</label>
+      <textarea id="contact-message" name="message" rows="7" required maxlength="5000"></textarea>
+      <div data-turnstile-widget></div>
+      <button type="submit" disabled>{t('Nachricht senden', 'Send message')}</button>
+    </fieldset>
+    <p data-contact-status role="status" aria-live="polite">
+      {t('Das Formular wird geladen …', 'Loading the contact form …')}
+    </p>
+  </form>
+  <p class="form-note">{t('Zum Schutz vor Spam wird Cloudflare Turnstile verwendet.',
+    'Cloudflare Turnstile is used to protect this form from spam.')}</p>
 </Layout>
+<script>
+  import '../scripts/contact';
+</script>
+<style>
+  form { display: grid; gap: 1rem; max-width: 700px; }
+  fieldset { display: grid; gap: .75rem; border: 0; padding: 0; margin: 0; }
+  input, textarea { width: 100%; padding: .8rem; border: 1px solid #8a9e93; border-radius: .4rem; font: inherit; }
+  textarea { resize: vertical; }
+  button { font: inherit; padding: .7rem 1rem; border: 1px solid #245e50; border-radius: .4rem; color: #fff; background: #245e50; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  [data-contact-status] { min-height: 1.5em; }
+  .form-note { font-size: .9rem; color: #53665f; }
+</style>

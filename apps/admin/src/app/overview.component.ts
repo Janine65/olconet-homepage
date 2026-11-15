@@ -23,7 +23,8 @@ import { AuthService, Overview } from './auth.service';
       <a routerLink="/reiseberichte/neu">Neuen Reisebericht schreiben</a>
       <a routerLink="/bildbibliothek/upload">Mehrere Bilder hochladen</a>
       <a routerLink="/bildbibliothek">Bildbibliothek und Reisebilder</a>
-      <a routerLink="/system">Paketversionen und Besucheranzahl</a>
+      <a routerLink="/besucher">Besucherstatistik</a>
+      <a routerLink="/system">Paketversionen</a>
     </div></section>
     <button type="button" class="secondary" (click)="load()" [disabled]="loading()">Übersicht neu laden</button>
   `,

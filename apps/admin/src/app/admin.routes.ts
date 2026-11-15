@@ -18,6 +18,8 @@ export const adminRoutes: Routes = [
     loadComponent: () => import('./overview.component').then(module => module.OverviewComponent) },
   { path: 'system', title: 'Systeminfo | olconet Verwaltung',
     loadComponent: () => import('./system.component').then(module => module.SystemComponent) },
+  { path: 'besucher', title: 'Besucherstatistik | olconet Verwaltung',
+    loadComponent: () => import('./visitors.component').then(module => module.VisitorsComponent) },
   { path: 'reiseberichte', title: 'Reiseberichte | olconet Verwaltung', loadComponent: reports, canDeactivate: [leavePage] },
   { path: 'reiseberichte/neu', title: 'Neuer Reisebericht | olconet Verwaltung',
     loadComponent: reports, data: { mode: 'new' }, canDeactivate: [leavePage] },

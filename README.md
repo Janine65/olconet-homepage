@@ -19,9 +19,10 @@ Mehrere Verwaltungskonten werden ausschliesslich per CLI eingerichtet;
 es gibt keine oeffentliche Registrierung. Alle Konten besitzen derzeit
 dieselben Verwaltungsrechte.
 
-Noch **nicht** implementiert: Kontaktformular/SMTP, Spam-Schutz. Die Seiten zeigen
-keine erfundenen Berichte oder Bilder. Der Kontakt ist vorerst
-ein Mail-Link. Es werden weder bestehende AMC-Daten noch Zugangsdaten kopiert.
+Das Kontaktformular versendet Nachrichten nach serverseitiger Validierung,
+Rate-Limit und Cloudflare-Turnstile-Pruefung per SMTP. Die Besucherstatistik
+erfasst Sitzungen, Seitenaufrufe und aggregierte Browserdaten; Roh-IP-Adressen
+werden nicht in der Datenbank gespeichert.
 
 ## Voraussetzungen und Start
 
@@ -485,13 +486,18 @@ Die Ansicht laesst sich mit **Schliessen** oder **Escape** verlassen.
 Mit der Tastatur ein Foto per Tab auswaehlen und per Enter oder Leertaste oeffnen;
 beim Schliessen kehrt der Fokus zum Foto zurueck.
 
-### Version und Besucherzaehler in der Fusszeile
+### Version und Besucherstatistik
 
 Die Verwaltung zeigt unter **Systeminfo** (`/#/system`) die Paketversionen
-von Homepage, Admin und Backend sowie die Besucheranzahl und den
-Erfassungsstatus. **Systeminformationen neu laden** aktualisiert den Stand,
-ohne einen Besuch zu zaehlen. Der Endpoint `GET /api/admin/system` verlangt
+von Homepage, Admin und Backend. Der Endpoint `GET /api/admin/system` verlangt
 eine gueltige Verwaltungssitzung.
+
+Unter **Besucherstatistik** (`/#/besucher`) gibt es einen Zeitraumfilter
+(maximal 365 Tage) und Auswertungen nach Land, Sitzungsdauer, Zugriffsquelle
+(direkt, Suche oder Verweis), Wochentag, UTC-Stunde, Seite, Geraet und Browser.
+Die Seite ist nur nach Anmeldung erreichbar. Alte Zeilen des zuvor verwendeten
+einfachen Zaehler-Endpunkts werden nicht in die Detailauswertungen uebernommen;
+sie bleiben bis zum Ablauf der Aufbewahrungsfrist in der Datenbank.
 
 Die Admin-Version stammt aus dem geladenen Admin-Build; Homepage und
 Release zeigen den mit dem Backend-Image ausgelieferten Paketstand.
@@ -519,37 +525,55 @@ angehoben; `git commit --no-verify` ueberspringt den Hook (empfohlen bei
 `--amend`, da ein Amend sonst erneut anhebt). Die zentrale Release-Version
 im Wurzel-`package.json` wird weiterhin manuell mit `pnpm version` gepflegt.
 
-Der Besucherzaehler erfasst **Browser-Sitzungen**, nicht Seitenaufrufe oder
-eindeutig identifizierte Personen. Ein HttpOnly-/SameSite=Strict-Sitzungscookie
-`olconet_visit` verhindert erneutes Zaehlen bei Seitenwechseln und Neuladen
-(auch zwischen Deutsch und Englisch). Er hat kein festes Ablaufdatum;
-Browser mit Sitzungswiederherstellung koennen ihn nach einem Neustart behalten.
-Ohne Cookies oder nach deren Loeschung wird ein neuer Besuch gezaehlt.
-Gleichzeitige allererste Aufrufe ohne Cookie koennen getrennte Sitzungen erzeugen.
-Automatisierte Aufrufe lassen sich nicht sicher von Menschen unterscheiden.
+Ein HttpOnly-/SameSite=Strict-Sitzungscookie `olconet_analytics` ordnet
+Seitenaufrufe einer Browser-Sitzung zu. Ohne Cookies oder nach deren Loeschung
+wird eine neue Sitzung begonnen; Personen werden nicht eindeutig identifiziert.
+Die Dauer wird beim Verlassen einer Seite erfasst und pro Seite auf 30 Minuten
+begrenzt. Browser-Wiederherstellung und parallele erste Aufrufe koennen die
+Messung beeinflussen.
 
-In PostgreSQL werden nur eine zufaellige Sitzungs-ID und deren Erfassungszeit
-in `VisitorSession` gespeichert, **keine IP-Adressen**, Browser-Fingerprints
-oder externen Analytics-Daten. Diese Datensaetze bleiben fuer den Gesamtstand
-erhalten. Der Zaehler beginnt bei null und ueberlebt Backend-/Container-Neustarts.
-Datenschutzhinweise und gegebenenfalls erforderliche Einwilligungen vor
-oeffentlicher Aktivierung an die eigene Website anpassen.
+Gespeichert werden eine zufaellige Sitzungs-ID, ISO-Laendercode, Quelle,
+Geraetekategorie, Browser-Kategorie sowie Seitenpfad und Seitenaufrufsdauer.
+Es werden weder IP-Adresse, vollstaendiger User-Agent noch vollstaendige
+Referrer-URL in PostgreSQL abgelegt. Die Homepage uebergibt die verifizierte
+Client-IP im Produktivbetrieb signiert an das Backend, das damit lokal die GeoIP-Landesdatenbank
+abfragt und die IP danach verwirft. Besuchsdaten werden bei einer Erfassung
+hoechstens taeglich auf 365 Tage begrenzt; alte Seitenaufrufe werden kaskadiert
+geloescht.
 
-Dev-Modus, Loopback und private LAN-Adressen werden nicht gezaehlt.
+Dev-Modus, Loopback und private LAN-Adressen werden standardmaessig nicht
+erfasst. Fuer einen lokalen Funktionstest kannst du
+`PUBLIC_VISITOR_TRACKING_TEST_MODE=true` sowohl in `apps/homepage/.env` als
+auch in `apps/backend/.env` setzen. Der Modus wirkt nur, wenn `NODE_ENV`
+`development` oder nicht gesetzt ist, und akzeptiert im Backend ausschliesslich
+Loopback-Anfragen. Sie werden mit einer synthetischen Loopback-IP erfasst;
+GeoIP liefert dafuer kein Land. Die Testbesuche landen in der konfigurierten
+Backend-Datenbank. Stelle daher vorher sicher, dass `DATABASE_URL` auf eine
+lokale Testdatenbank und nicht auf die Produktivdatenbank zeigt. Zum Abschalten
+die Variable in beiden Dateien auf `false` setzen oder entfernen.
+
 Fuer den oeffentlichen Betrieb in `.env.docker.synology` setzen:
 
 ```dotenv
 # Lokal erzeugen, niemals ins Repository committen: openssl rand -hex 32
 VISITOR_PROXY_SECRET=<zufaelliges Secret mit mindestens 32 Zeichen>
 VISITOR_TRUSTED_PROXIES=192.168.1.200
-VISITOR_EXCLUDED_IPS=<oeffentliche Heimnetz-IP>
+VISITOR_EXCLUDED_IPS=
+GEOIP_DATA_DIR=/volume1/server/olconet/geoip
+GEOIP_COUNTRY_DB=/geoip/GeoLite2-Country.mmdb
 ```
 
-Mehrere IPv4-/IPv6-Adressen kommasepariert angeben. Bei einem wechselnden
-Internetanschluss oder wechselnden IPv6-Adressen die Ausnahmen aktualisieren.
-Ausgeschlossen wird das gesamte Heimnetz mit derselben oeffentlichen IP,
-nicht nur ein einzelner Browser. Die eigene oeffentliche IP wird nicht
-automatisch anhand anderer Besucher ermittelt.
+Die Datei `GeoLite2-Country.mmdb` muss im Ordner `GEOIP_DATA_DIR` liegen und
+regelmaessig von der Betreiberin aktualisiert werden. Ist sie nicht gesetzt,
+bleibt die Besuchserfassung ohne Laenderzuordnung verfuegbar. Ein ungueltiger
+Dateipfad oder eine unlesbare Datenbank verhindert den Backend-Start.
+
+`VISITOR_EXCLUDED_IPS` ist optional. Wenn du eigene Besuche ausschliessen
+moechtest, mehrere IPv4-/IPv6-Adressen kommasepariert eintragen. Bei einem
+wechselnden Internetanschluss oder wechselnden IPv6-Adressen die Ausnahmen
+aktualisieren. Ausgeschlossen wird das gesamte Heimnetz mit derselben
+oeffentlichen IP, nicht nur ein einzelner Browser. Die eigene oeffentliche IP
+wird nicht automatisch anhand anderer Besucher ermittelt.
 
 **Proxy-Konfiguration:** `VISITOR_TRUSTED_PROXIES` muss die IP des unmittelbar
 vorgeschalteten Reverse-Proxys enthalten, **wie der Homepage-Container sie sieht**.
@@ -558,21 +582,40 @@ Nur dedizierte, vertrauenswuerdige Proxys eintragen, keine pauschalen LAN-Netze.
 Der Reverse-Proxy muss `X-Forwarded-For` mit genau einer selbst ermittelten
 Client-IP **ueberschreiben**, nicht ungeprueft weiterreichen oder anhaengen.
 Header anderer Absender werden ignoriert; mehrdeutige Proxy-Ketten werden
-nicht gezaehlt. Die Homepage ersetzt eingehende Zaehler-Header und signiert
-lediglich die Klassifikation „lokal/ausgeschlossen“ oder „extern“ zum Backend.
-Die urspruengliche IP wird dabei nicht an das Backend weitergereicht.
-
-Ohne alle drei Einstellungen bleibt die Erfassung deaktiviert; die Fusszeile
-zeigt dies ausdruecklich. Fehler bei API/Proxy/Datenbank werden als
-„Besucherzaehler nicht verfuegbar“ angezeigt, nicht als erfolgreicher Nullstand.
-`SITE_URL` muss exakt der Browser-Origin entsprechen.
+nicht erfasst. Die Homepage signiert Klassifikation und Client-IP fuer die
+interne Backend-Anfrage. Die IP wird ausschliesslich fuer die lokale GeoIP-Abfrage
+verwendet und nicht in der Datenbank gespeichert. Ohne `VISITOR_PROXY_SECRET`
+oder `VISITOR_TRUSTED_PROXIES` bleibt die Erfassung deaktiviert;
+`VISITOR_EXCLUDED_IPS` ist optional. `SITE_URL` muss exakt dem Browser-Origin
+entsprechen.
 
 Nach der Einrichtung Images neu bauen, mit dem `migrate`-Service die neue
 Migration ausfuehren und Homepage/Backend mit der neuen Konfiguration neu
 erstellen. Lokal vor dem Backend-Start `pnpm db:deploy` ausfuehren.
-Die API `GET /api/public/visitors` liest nur den Stand; `POST` erfasst einen
-Besuch ausschliesslich mit gueltiger Proxy-Signatur und Homepage-Origin.
-Der Zaehler ist unabhaengig von Verwaltungssitzungen.
+`POST /api/public/visitors` erfasst einen Seitenaufruf ausschliesslich mit
+gueltiger Proxy-Signatur und Homepage-Origin. Das Admin-Frontend muss ebenfalls
+aktualisiert werden, um die neue Statistikseite bereitzustellen.
+
+### Kontaktformular
+
+Das Kontaktformular ist zweisprachig und sendet Nachrichten an
+`CONTACT_RECIPIENT` (standardmaessig `janine@olconet.com`). Es verlangt eine
+Cloudflare-Turnstile-Bestaetigung, validiert die Eingaben nochmals im Backend
+und begrenzt erfolgreiche Nachrichten je E-Mail-Adresse auf drei pro 15 Minuten.
+Name, E-Mail und Nachricht werden per SMTP versendet, aber nicht in PostgreSQL
+gespeichert.
+
+In `.env.docker.synology` die Werte fuer `TURNSTILE_SITE_KEY`,
+`TURNSTILE_SECRET_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASSWORD` und `SMTP_FROM` eintragen. Der Site-Key ist oeffentlich;
+Turnstile-Secret und SMTP-Passwort duerfen nicht in Git landen. Das Formular
+bleibt deaktiviert, solange eine benoetigte Einstellung fehlt. Den
+Cloudflare-Schluessel niemals im Frontend oder in einer eingecheckten
+Konfigurationsdatei ablegen.
+
+Vor der oeffentlichen Aktivierung die Datenschutzhinweise und gegebenenfalls
+erforderliche Einwilligungen fuer Turnstile, GeoIP und die Besuchsauswertung
+rechtlich pruefen und auf der Website ergaenzen.
 
 ### Sammy und Meine Kreationen einfach sortieren
 
@@ -1093,6 +1136,4 @@ PostgreSQL-Erstinitialisierung muessen in der Zielumgebung verifiziert werden.
 
 ## Naechste Ausbauschritte
 
-1. Kontaktformular mit serverseitiger Validierung, Rate-Limit, Spam-Schutz
-   und SMTP-Versand an `janine@olconet.com`.
-2. Passwort-/Kontoverwaltung, Datenschutz/Impressum, Backups, Monitoring und produktives Deployment.
+1. Passwort-/Kontoverwaltung, Datenschutz/Impressum, Backups, Monitoring und produktives Deployment.

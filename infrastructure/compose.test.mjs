@@ -92,22 +92,30 @@ for (const environment of ['mac', 'synology']) {
     assert.equal(services.migrate.restart, 'no');
     assert.deepEqual(services.migrate.command.slice(-2), ['migrate', 'deploy']);
     assert.equal(services.migrate.environment.DATABASE_URL, services.backend.environment.DATABASE_URL);
+    for (const secret of ['TURNSTILE_SECRET_KEY', 'SMTP_PASSWORD', 'VISITOR_PROXY_SECRET']) {
+      assert.equal(services.migrate.environment[secret], undefined);
+      assert.equal(services['create-admin'].environment[secret], undefined);
+    }
     assert.equal(services.admin.environment.API_PROXY_URL, 'http://backend:8080');
     assert.equal(services.homepage.environment.API_PROXY_URL, 'http://backend:8080');
     assert.equal(services.homepage.environment.API_PROXY_PREFIX, '/api/public/');
     assert.equal(services.backend.environment.SITE_URL,
-      environment === 'mac' ? 'http://localhost:18431' : 'https://olconet.com');
+      environment === 'mac' ? 'http://localhost:18431' : 'https://www.example.com');
     assert.equal(services.backend.environment.ADMIN_ORIGIN,
       environment === 'mac' ? 'http://localhost:18432' : 'https://verwaltung.example.com');
     assert.equal(services.backend.environment.UPLOAD_DIR, '/data/uploads');
-    assert.equal(services.backend.volumes.length, 1);
-    assert.equal(services.backend.volumes[0].type, environment === 'mac' ? 'volume' : 'bind');
+    assert.equal(services.backend.volumes.length, 2);
+    assert.equal(services.backend.volumes[0].type, 'bind');
     assert.equal(services.backend.volumes[0].source,
-      environment === 'mac' ? 'uploads' : '/volume1/server/olconet/uploads');
+      environment === 'mac' ? `${process.cwd()}/apps/backend/uploads` : '/volume1/server/olconet/uploads');
     assert.equal(services.backend.volumes[0].target, '/data/uploads');
     assert.equal(services.backend.volumes[0].read_only, undefined);
-    if (environment === 'mac') assert.equal(volumes.uploads.name, 'olconet_uploads');
-    else assert.equal(volumes?.uploads, undefined);
+    assert.equal(services.backend.volumes[1].type, 'bind');
+    assert.equal(services.backend.volumes[1].target, '/geoip');
+    assert.equal(services.backend.volumes[1].read_only, true);
+    assert.equal(services.backend.volumes[1].source,
+      environment === 'mac' ? `${process.cwd()}/geoip` : '/volume1/server/olconet/geoip');
+    if (environment === 'synology') assert.equal(volumes?.uploads, undefined);
     assert.deepEqual(services['create-admin'].profiles, ['tools']);
     assert.equal(services['create-admin'].environment.DATABASE_URL, services.backend.environment.DATABASE_URL);
   });

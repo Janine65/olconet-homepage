@@ -20,8 +20,9 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthRequest>();
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      const visitor = request.method === 'POST' && request.path === '/api/public/visitors';
-      const origin = visitor ? process.env['SITE_URL'] : this.config.origin;
+      const publicSitePost = request.method === 'POST' &&
+        ['/api/public/visitors', '/api/public/contact'].includes(request.path);
+      const origin = publicSitePost ? process.env['SITE_URL'] : this.config.origin;
       const multipart = this.reflector.getAllAndOverride<boolean>(MULTIPART_ROUTE, [context.getHandler(), context.getClass()]);
       if (request.headers.origin !== origin ||
         request.headers['x-olconet-request'] !== '1' ||

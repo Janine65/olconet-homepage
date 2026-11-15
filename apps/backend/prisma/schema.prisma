@@ -50,8 +50,27 @@ model LoginThrottle {
 }
 
 model VisitorSession {
-  id        String   @id @db.Uuid
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  id        String            @id @db.Uuid
+  createdAt DateTime          @default(now()) @db.Timestamptz(3)
+  country   String?           @db.Char(2)
+  source    String            @default("unknown")
+  device    String            @default("unknown")
+  browser   String            @default("unknown")
+  pageViews VisitorPageView[]
+
+  @@index([createdAt])
+}
+
+model VisitorPageView {
+  id              String         @id @default(uuid()) @db.Uuid
+  sessionId       String         @db.Uuid
+  path            String         @db.VarChar(256)
+  enteredAt       DateTime       @default(now()) @db.Timestamptz(3)
+  durationSeconds Int?
+  session         VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, enteredAt])
+  @@index([enteredAt])
 }
 
 model TravelReport {

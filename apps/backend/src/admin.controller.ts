@@ -1,8 +1,8 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { visitorTotals } from './visitors.controller';
+import { VisitorAnalyticsService } from './visitor-analytics.service';
 
 function packageVersion(path: string) {
   const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
@@ -14,7 +14,10 @@ function packageVersion(path: string) {
 
 @Controller('api/admin')
 export class AdminController {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(VisitorAnalyticsService) private readonly visitorAnalytics: VisitorAnalyticsService,
+  ) {}
 
   @Get('system')
   async system() {
@@ -25,8 +28,12 @@ export class AdminController {
         admin: packageVersion(resolve(__dirname, '../../admin/package.json')),
         backend: packageVersion(resolve(__dirname, '../package.json')),
       },
-      visitors: await visitorTotals(this.prisma),
     };
+  }
+
+  @Get('visitors')
+  visitors(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.visitorAnalytics.report(from, to);
   }
 
   @Get('overview')

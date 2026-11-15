@@ -7,6 +7,11 @@ services:
         target: /data/uploads
         bind:
           create_host_path: false
+      - type: bind
+        source: /volume1/server/GeoIP
+        target: /geoip
+        bind:
+          create_host_path: false
   migrate:
     networks: [olconet, back-tier]
   create-admin:

@@ -7,6 +7,11 @@ services:
         target: /data/uploads
         bind:
           create_host_path: false
+      - type: bind
+        source: /Users/janinefranken/Development/JS/amcbackend-py/GeoIP
+        target: /geoip
+        bind:
+          create_host_path: false
   migrate:
     extra_hosts: ["host.docker.internal:host-gateway"]
   create-admin:

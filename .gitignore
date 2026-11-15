@@ -105,3 +105,5 @@ apps/backend/.windsurf/skills/prisma-postgres
 apps/backend/.windsurf/skills/prisma-postgres-setup
 apps/backend/.windsurf/skills/prisma-upgrade-v7
 apps/backend/skills-lock.json
+cloudflare.txt
+/geoip/

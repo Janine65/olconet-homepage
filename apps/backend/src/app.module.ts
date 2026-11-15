@@ -13,11 +13,14 @@ import { PublicTravelController } from './travel/public-travel.controller';
 import { MediaService } from './media/media.service';
 import { MediaController, PublicMediaController } from './media/media.controller';
 import { VisitorsController } from './visitors.controller';
+import { GeoIpService, VisitorAnalyticsService } from './visitor-analytics.service';
+import { ContactController } from './contact.controller';
+import { ContactService } from './contact.service';
 
 @Module({
-  controllers: [HealthController, AuthController, AdminController, TravelController, PublicTravelController, MediaController, PublicMediaController, VisitorsController],
+  controllers: [HealthController, AuthController, AdminController, TravelController, PublicTravelController, MediaController, PublicMediaController, VisitorsController, ContactController],
   providers: [
-    PrismaService, AuthService, TravelService, MediaService,
+    PrismaService, AuthService, TravelService, MediaService, GeoIpService, VisitorAnalyticsService, ContactService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_FILTER, useClass: HttpErrorFilter },
   ],
