@@ -4,17 +4,17 @@ import { currentLanguage, pagePath, syncLanguageLinks, translations } from '../i
 const lang = currentLanguage();
 const t = translations(lang);
 
-interface Summary {
+export interface Summary {
   title: string; slug: string; excerpt: string; destination: string | null;
   travelStart: string | null; travelEnd: string | null; publishedAt: string | null;
 }
 interface ReportPage { id: string; title: string; contentHtml: string; images: {
   assetId: string; caption: string | null; inGallery: boolean; asset: { altText: string; title: string };
 }[]; }
-interface Report extends Summary { pages: ReportPage[]; }
-interface List { items: Summary[]; page: number; pageSize: number; total: number; }
+export interface Report extends Summary { pages: ReportPage[]; }
+export interface List { items: Summary[]; page: number; pageSize: number; total: number; }
 
-async function fetchJson<T>(url: string): Promise<T> {
+export async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: 'omit' });
   if (!response.ok) {
     throw new Error(response.status === 404 ?
@@ -24,7 +24,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return await response.json() as T;
 }
 
-function metadata(report: Summary) {
+export function metadata(report: Summary) {
   const date = (value: string) => new Date(value).toLocaleDateString(lang === 'en' ? 'en-GB' : 'de-CH', { timeZone: 'UTC' });
   const parts = [report.destination];
   if (report.travelStart) parts.push(`${t('Reisebeginn', 'Travel start')}: ${date(report.travelStart)}`);
@@ -176,6 +176,7 @@ export function loadReport() {
       report = await fetchJson<Report>(`/api/public/reports/${encodeURIComponent(slug)}?lang=${lang}`);
       title.textContent = report.title;
       document.title = `${report.title} | olconet`;
+      document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', report.excerpt);
       meta.textContent = metadata(report);
       excerpt.textContent = report.excerpt;
       select.replaceChildren();

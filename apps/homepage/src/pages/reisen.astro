@@ -6,7 +6,7 @@ const { lang = 'de' } = Astro.props;
 const t = translations(lang);
 const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
 ---
-<Layout title={t('Reiseberichte', 'Travel reports')} lang={lang}>
+<Layout title={t('Reiseberichte', 'Travel reports')} description={t('Reiseberichte, Fotos und Erinnerungen von Janine und Hansjörg.', 'Travel reports, photos and memories from Janine and Hansjörg.')} lang={lang}>
   <h1>{t('Reiseberichte', 'Travel reports')}</h1>
   <p>{t('Neue Orte, kleine Abenteuer und Erinnerungen.', 'New places, little adventures and memories.')} <a href={feed}>{t('Reiseberichte als RSS-Feed abonnieren', 'Subscribe to travel reports via RSS')}</a></p>
   <p id="reports-status" role="status">{t('Reiseberichte werden geladen ...', 'Loading travel reports ...')}</p>

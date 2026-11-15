@@ -2,8 +2,8 @@
 import PhotoViewer from '../components/PhotoViewer.astro';
 import { version } from '../../../../package.json';
 import { pagePath, translations, type Language } from '../i18n';
-interface Props { title: string; lang?: Language; }
-const { title, lang = 'de' } = Astro.props;
+interface Props { title: string; description?: string; lang?: Language; }
+const { title, description, lang = 'de' } = Astro.props;
 const t = translations(lang);
 const path = Astro.url.pathname.replace(/^\/en(?=\/|$)/, '') || '/';
 const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
@@ -13,7 +13,7 @@ const feed = '/api/public/reports/rss' + (lang === 'en' ? '?lang=en' : '');
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={t('Janines Reiseberichte, kreative Arbeiten und Fotos von Sammy.', "Janine's travel reports, creative work and photos of Sammy.")} />
+    <meta name="description" content={description ?? t('Janines Reiseberichte, kreative Arbeiten und Fotos von Sammy.', "Janine's travel reports, creative work and photos of Sammy.")} />
     <title>{title} | olconet</title>
     <link rel="alternate" type="application/rss+xml" title={t('Reiseberichte von Janine und Hansjörg', 'Travel reports by Janine and Hansjörg')} href={feed} />
     <link rel="alternate" hreflang="de" href={pagePath(path, 'de')} />

@@ -5,7 +5,7 @@ interface Props { lang?: Language; }
 const { lang = 'de' } = Astro.props;
 const t = translations(lang);
 ---
-<Layout title={t('Reisebericht', 'Travel report')} lang={lang}>
+<Layout title={t('Reisebericht', 'Travel report')} description={t('Reisebericht mit Geschichten und Fotos von unterwegs.', 'A travel report with stories and photos from the road.')} lang={lang}>
   <a href={pagePath('/reisen/', lang)}>{t('Zurück zu den Reiseberichten', 'Back to travel reports')}</a>
   <p id="report-status" role="status">{t('Reisebericht wird geladen ...', 'Loading travel report ...')}</p>
   <article id="report-article" hidden>

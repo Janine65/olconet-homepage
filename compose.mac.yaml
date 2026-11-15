@@ -8,7 +8,7 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: /Users/janinefranken/Development/JS/amcbackend-py/GeoIP
+        source: /Users/janinefranken/Development/JS/amc-backend-py/GeoIP
         target: /geoip
         bind:
           create_host_path: false

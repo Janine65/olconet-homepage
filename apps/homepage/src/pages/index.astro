@@ -5,14 +5,40 @@ interface Props { lang?: Language; }
 const { lang = 'de' } = Astro.props;
 const t = translations(lang);
 ---
-<Layout title={t('Willkommen', 'Welcome')} lang={lang}>
+<Layout title={t('Willkommen', 'Welcome')} description={t('Entdecke Janines Reiseberichte, kreative Arbeiten und Erinnerungen mit Sammy.', "Discover Janine's travel reports, creative projects and memories with Sammy.")} lang={lang}>
   <p class="eyebrow">{t('Reisen', 'Travel')} &middot; {t('Kreativ sein', 'Creativity')} &middot; {t('Mit Sammy unterwegs', 'Adventures with Sammy')}</p>
   <h1>{t('Momente sammeln. Geschichten teilen.', 'Collecting moments. Sharing stories.')}</h1>
-  <p>{t('Willkommen auf meiner persönlichen Homepage. Hier entsteht ein Ort für meine Reiseberichte, kreativen Arbeiten und Erlebnisse mit Sammy.',
-    'Welcome to my personal homepage. A place for my travel reports, creative work and adventures with Sammy.')}</p>
+  <p>{t('Hallo, ich bin Janine. Auf meiner Homepage sammle ich Erinnerungen an Reisen, zeige meine kreativen Arbeiten und teile Erlebnisse, die mein Hund Sammy erlebt, mit und ohne mich.',
+    "Hello, I'm Janine. On my website I collect travel memories, share my creative projects and my dog Sammy's adventures, both with and without me.")}</p>
   <div class="cards">
-    <section class="card"><h2>{t('Reiseberichte', 'Travel reports')}</h2><p>{t('Neue Orte, kleine Abenteuer und Erinnerungen.', 'New places, little adventures and memories.')}</p><a href={pagePath('/reisen/', lang)}>{t('Zu den Reisen', 'Explore my travels')}</a></section>
-    <section class="card"><h2>{t('Meine Kreationen', 'My creations')}</h2><p>{t('Zeichnungen, Töpferarbeiten, Nähprojekte und mehr.', 'Drawings, pottery, sewing projects and more.')}</p><a href={pagePath('/kreationen/', lang)}>{t('Zur Galerie', 'View the gallery')}</a></section>
-    <section class="card"><h2>Sammy</h2><p>{t('Einblicke in das Leben mit meinem Hund.', 'A glimpse into life with my dog.')}</p><a href={pagePath('/sammy/', lang)}>{t('Zu Sammy', 'Meet Sammy')}</a></section>
+    <section class="card home-card">
+      <img data-home-travel-image hidden alt="" />
+      <h2>{t('Reiseberichte', 'Travel reports')}</h2><p>{t('Neue Orte, kleine Abenteuer und Erinnerungen.', 'New places, little adventures and memories.')}</p><a href={pagePath('/reisen/', lang)}>{t('Zu den Reisen', 'Explore my travels')}</a>
+    </section>
+    <section class="card home-card">
+      <img data-home-gallery-image="DRAWING" hidden alt="" />
+      <h2>{t('Meine Kreationen', 'My creations')}</h2><p>{t('Zeichnungen, Töpferarbeiten, Nähprojekte und mehr.', 'Drawings, pottery, sewing projects and more.')}</p><a href={pagePath('/kreationen/', lang)}>{t('Zur Galerie', 'View the gallery')}</a>
+    </section>
+    <section class="card home-card">
+      <img data-home-gallery-image="SAMMY" hidden alt="" />
+      <h2>Sammy</h2><p>{t('Einblicke in das Leben mit meinem Hund.', 'A glimpse into life with my dog.')}</p><a href={pagePath('/sammy/', lang)}>{t('Zu Sammy', 'Meet Sammy')}</a>
+    </section>
   </div>
+  <p data-home-images-status role="status" hidden></p>
+  <section class="latest-reports" aria-labelledby="latest-reports-title">
+    <h2 id="latest-reports-title">{t('Neueste Reiseberichte', 'Latest travel reports')}</h2>
+    <p data-home-reports-status role="status">{t('Reiseberichte werden geladen ...', 'Loading travel reports ...')}</p>
+    <div data-home-reports class="cards"></div>
+    <button data-home-reports-retry type="button" hidden>{t('Erneut versuchen', 'Try again')}</button>
+    <p><a href={pagePath('/reisen/', lang)}>{t('Alle Reiseberichte ansehen', 'View all travel reports')}</a></p>
+  </section>
+  <noscript><p>{t('Für aktuelle Bilder und Reiseberichte bitte JavaScript aktivieren.', 'Please enable JavaScript to see the latest photos and travel reports.')}</p></noscript>
 </Layout>
+<script>
+  import '../scripts/home';
+</script>
+<style>
+  .home-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: .5rem; }
+  .latest-reports { margin-top: 4rem; }
+  .latest-reports .cards { margin-top: 1.5rem; }
+</style>

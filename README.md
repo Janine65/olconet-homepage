@@ -317,6 +317,10 @@ Felder `contentHtml` und `images` spiegeln die erste freigegebene Seite.
 
 ### Homepage und RSS
 
+- Startseite: Die drei Themenkarten zeigen Vorschaubilder aus veroeffentlichten
+  Inhalten, sobald passende Bilder vorhanden sind. Das Reisebild stammt aus
+  einem der drei neuesten Berichte; die Galeriebilder aus den ersten Eintraegen
+  der jeweiligen Galerie. Darunter erscheinen die drei neuesten Reiseberichte.
 - Liste: `http://localhost:18441/reisen/`
 - Einzelbericht: `/reisen/bericht/?slug=mein-bericht`
 - Bestimmte Berichtsseite: `/reisen/bericht/?slug=mein-bericht&seite=SEITEN-UUID`
@@ -339,6 +343,9 @@ Seiten benoetigen JavaScript fuer die aktuelle Liste und Detailansicht.
 Fehler werden sichtbar angezeigt, nicht als leere erfolgreiche Antwort.
 Fuer serverseitig gerenderte Berichtsseiten/SEO kann spaeter Astro-SSR
 ergaenzt werden; derzeit erfordert Veroeffentlichung keinen Homepage-Neubuild.
+Seiten besitzen eigene Beschreibungen; bei Reiseberichten aktualisiert der
+Browser die Beschreibung nach dem Laden. Ohne JavaScript sehen Suchmaschinen
+und Link-Vorschauen nur die allgemeine Beschreibung fuer Reiseberichte.
 
 `SITE_URL` konfiguriert die oeffentliche Homepage-Origin fuer absolute
 RSS-Links, ohne Pfad oder abschliessenden Slash. Lokal gilt standardmaessig

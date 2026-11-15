@@ -6,7 +6,7 @@ interface Props { lang?: Language; }
 const { lang = 'de' } = Astro.props;
 const t = translations(lang);
 ---
-<Layout title={t('Meine Kreationen', 'My creations')} lang={lang}>
+<Layout title={t('Meine Kreationen', 'My creations')} description={t('Janines Zeichnungen, Töpferarbeiten, Nähprojekte und weitere selbstgemachte Kreationen.', "Janine's drawings, pottery, sewing projects and other handmade creations.")} lang={lang}>
   <h1>{t('Meine Kreationen', 'My creations')}</h1>
   <p>{t('Zeichnungen, Töpferarbeiten, Nähprojekte und andere selbstgemachte Lieblingsstücke.', 'Drawings, pottery, sewing projects and other handmade favourites.')}</p>
   <Gallery category="DRAWING" lang={lang} />

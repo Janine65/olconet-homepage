@@ -32,7 +32,11 @@ function proxyApi(request, response, target, visitors) {
   ]);
   const headers = Object.fromEntries(Object.entries(request.headers)
     .filter(([name]) => !excluded.has(name) && !name.startsWith('x-forwarded-') && !name.startsWith('x-olconet-visitor-')));
-  if (request.url === '/api/public/visitors') Object.assign(headers, visitorHeaders(request, visitors));
+  if (request.url === '/api/public/visitors') {
+    console.info('Visitor proxy peer:', request.socket.remoteAddress);
+    Object.assign(headers, visitorHeaders(request, visitors));
+  }
+  // if (request.url === '/api/public/visitors') Object.assign(headers, visitorHeaders(request, visitors));
   const upstream = (target.protocol === 'https:' ? httpsRequest : httpRequest)({
     protocol: target.protocol,
     hostname: target.hostname,

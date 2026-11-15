@@ -5,7 +5,7 @@ interface Props { lang?: Language; }
 const { lang = 'de' } = Astro.props;
 const t = translations(lang);
 ---
-<Layout title={t('Kontakt', 'Contact')} lang={lang}>
+<Layout title={t('Kontakt', 'Contact')} description={t('Schreibe Janine eine Nachricht über das Kontaktformular oder per E-Mail.', 'Send Janine a message using the contact form or by email.')} lang={lang}>
   <h1>{t('Kontakt', 'Contact')}</h1>
   <p>{t('Du kannst mir auch direkt an', 'You can also write to me directly at')} <a href="mailto:janine@olconet.com">janine@olconet.com</a> mailen.</p>
   <form id="contact-form">
