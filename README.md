@@ -317,10 +317,14 @@ Felder `contentHtml` und `images` spiegeln die erste freigegebene Seite.
 
 ### Homepage und RSS
 
-- Startseite: Die drei Themenkarten zeigen Vorschaubilder aus veroeffentlichten
-  Inhalten, sobald passende Bilder vorhanden sind. Das Reisebild stammt aus
-  einem der drei neuesten Berichte; die Galeriebilder aus den ersten Eintraegen
-  der jeweiligen Galerie. Darunter erscheinen die drei neuesten Reiseberichte.
+Homepage und Verwaltung haben eigene Browser-Icons: [Landschaft](apps/homepage/public/favicon.svg)
+fuer die Homepage und [Schieberegler](apps/admin/public/favicon.svg) fuer die Verwaltung.
+
+- Startseite: Jede Themenkarte zeigt das zuletzt hochgeladene oeffentlich
+  sichtbare Foto ihrer Kategorie, unabhaengig von der Galeriereihenfolge.
+  Fotos in veroeffentlichten Fotogruppen und auf veroeffentlichten Seiten
+  aelterer Reiseberichte zaehlen mit. Darunter erscheinen weiterhin die drei
+  neuesten Reiseberichte.
 - Liste: `http://localhost:18441/reisen/`
 - Einzelbericht: `/reisen/bericht/?slug=mein-bericht`
 - Bestimmte Berichtsseite: `/reisen/bericht/?slug=mein-bericht&seite=SEITEN-UUID`

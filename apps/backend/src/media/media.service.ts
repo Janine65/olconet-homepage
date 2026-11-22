@@ -9,7 +9,7 @@ import { Prisma } from '../generated/prisma/client';
 import { lockMedia } from './media.lock';
 import { normalizeImage } from './image';
 import { mediaOrderBy, moveInput, orderToken } from './media.order';
-import { Language, translatedMedia } from '../language';
+import { Language, translated, translatedMedia } from '../language';
 
 const gallerySelect = {
   id: true, title: true, altText: true, description: true, category: true, sortOrder: true,
@@ -17,6 +17,11 @@ const gallerySelect = {
   titleEn: true, altTextEn: true, descriptionEn: true,
   children: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], select: { id: true } },
 } satisfies Prisma.MediaAssetSelect;
+
+const publishedReportImage = {
+  report: { status: 'PUBLISHED' },
+  page: { status: 'PUBLISHED' },
+} satisfies Prisma.ReportImageWhereInput;
 
 @Injectable()
 export class MediaService implements OnModuleInit {
@@ -48,6 +53,30 @@ export class MediaService implements OnModuleInit {
       this.prisma.mediaAsset.count({ where }),
     ]);
     return { items: publicOnly ? items.map(asset => translatedMedia(asset, lang)) : items, total, page, pageSize: 20 };
+  }
+
+  async latestPublicPhoto(categoryInput: unknown, lang: Language) {
+    const category = mediaCategory(categoryInput);
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: category === 'TRAVEL'
+        ? { category, reports: { some: publishedReportImage } }
+        : { category, status: 'PUBLISHED' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true, altText: true, altTextEn: true,
+        reports: {
+          where: publishedReportImage, orderBy: { reportId: 'asc' }, take: 1,
+          select: { report: { select: { slug: true } } },
+        },
+      },
+    });
+    if (!asset) return null;
+    const id = encodeURIComponent(asset.id);
+    const altText = translated(asset.altText, asset.altTextEn, lang);
+    if (category !== 'TRAVEL') return { altText, url: `/api/public/media/${id}/image` };
+    const report = asset.reports[0]?.report;
+    if (!report) throw new NotFoundException('Das Bild ist in diesem Bericht nicht verfügbar.');
+    return { altText, url: `/api/public/reports/${encodeURIComponent(report.slug)}/images/${id}` };
   }
 
   async order(categoryInput: unknown, page: number) {
@@ -310,7 +339,9 @@ export class MediaService implements OnModuleInit {
 
   async reportImage(slug: string, id: string) {
     const asset = await this.prisma.mediaAsset.findFirst({
-      where: { id, category: 'TRAVEL', reports: { some: { report: { slug, status: 'PUBLISHED' }, page: { status: 'PUBLISHED' } } } },
+      where: { id, category: 'TRAVEL', reports: { some: {
+        ...publishedReportImage, report: { ...publishedReportImage.report, slug },
+      } } },
       select: { storageKey: true },
     });
     if (!asset) throw new NotFoundException('Das Bild ist in diesem Bericht nicht verfügbar.');

@@ -1,5 +1,5 @@
 import { currentLanguage, pagePath, translations } from '../i18n';
-import { fetchJson, metadata, type List, type Report, type Summary } from './reports';
+import { fetchJson, metadata, type List } from './reports';
 
 const lang = currentLanguage();
 const t = translations(lang);
@@ -7,9 +7,8 @@ const imageStatus = document.querySelector<HTMLElement>('[data-home-images-statu
 const reportStatus = document.querySelector<HTMLElement>('[data-home-reports-status]');
 const reportList = document.querySelector<HTMLElement>('[data-home-reports]');
 const retry = document.querySelector<HTMLButtonElement>('[data-home-reports-retry]');
-const travelImage = document.querySelector<HTMLImageElement>('[data-home-travel-image]');
 
-if (!imageStatus || !reportStatus || !reportList || !retry || !travelImage) {
+if (!imageStatus || !reportStatus || !reportList || !retry) {
   throw new Error('Die Startseite ist unvollständig.');
 }
 
@@ -28,31 +27,16 @@ function showImage(image: HTMLImageElement, url: string, alt: string) {
   image.src = url;
 }
 
-async function loadGalleryImage(image: HTMLImageElement) {
-  const category = image.dataset['homeGalleryImage'];
+async function loadPreview(image: HTMLImageElement) {
+  const category = image.dataset['homeImage'];
   try {
-    const response = await fetch(`/api/public/media?category=${encodeURIComponent(category!)}&page=1&lang=${lang}`);
-    if (!response.ok) throw new Error(`Gallery preview: HTTP ${response.status}`);
-    const data: { items: { id: string; altText: string }[] } = await response.json();
-    const first = data.items[0];
-    if (first) showImage(image, `/api/public/media/${encodeURIComponent(first.id)}/image`, first.altText);
+    if (!category) throw new Error('Missing preview category');
+    const response = await fetch(`/api/public/media/latest?category=${encodeURIComponent(category)}&lang=${lang}`);
+    if (!response.ok) throw new Error(`Preview ${category}: HTTP ${response.status}`);
+    const { image: preview }: { image: { url: string; altText: string } | null } = await response.json();
+    if (preview) showImage(image, preview.url, preview.altText);
   } catch (error) {
     showImageError(error);
-  }
-}
-
-async function loadTravelImage(reports: Summary[]) {
-  for (const summary of reports) {
-    try {
-      const report = await fetchJson<Report>(`/api/public/reports/${encodeURIComponent(summary.slug)}?lang=${lang}`);
-      const photo = report.pages.flatMap(page => page.images)[0];
-      if (photo) {
-        showImage(travelImage!, `/api/public/reports/${encodeURIComponent(report.slug)}/images/${encodeURIComponent(photo.assetId)}`, photo.asset.altText);
-        return;
-      }
-    } catch (error) {
-      showImageError(error);
-    }
   }
 }
 
@@ -81,7 +65,6 @@ async function loadReports() {
     reportStatus!.textContent = result.items.length
       ? ''
       : t('Noch keine Reiseberichte veröffentlicht.', 'No travel reports have been published yet.');
-    void loadTravelImage(result.items.slice(0, 3));
   } catch (error) {
     reportStatus!.setAttribute('role', 'alert');
     reportStatus!.textContent = error instanceof Error ? error.message :
@@ -90,8 +73,8 @@ async function loadReports() {
   }
 }
 
-for (const image of document.querySelectorAll<HTMLImageElement>('[data-home-gallery-image]')) {
-  void loadGalleryImage(image);
+for (const image of document.querySelectorAll<HTMLImageElement>('[data-home-image]')) {
+  void loadPreview(image);
 }
 retry.addEventListener('click', () => void loadReports());
 void loadReports();

@@ -12,15 +12,15 @@ const t = translations(lang);
     "Hello, I'm Janine. On my website I collect travel memories, share my creative projects and my dog Sammy's adventures, both with and without me.")}</p>
   <div class="cards">
     <section class="card home-card">
-      <img data-home-travel-image hidden alt="" />
+      <img data-home-image="TRAVEL" hidden alt="" />
       <h2>{t('Reiseberichte', 'Travel reports')}</h2><p>{t('Neue Orte, kleine Abenteuer und Erinnerungen.', 'New places, little adventures and memories.')}</p><a href={pagePath('/reisen/', lang)}>{t('Zu den Reisen', 'Explore my travels')}</a>
     </section>
     <section class="card home-card">
-      <img data-home-gallery-image="DRAWING" hidden alt="" />
+      <img data-home-image="DRAWING" hidden alt="" />
       <h2>{t('Meine Kreationen', 'My creations')}</h2><p>{t('Zeichnungen, Töpferarbeiten, Nähprojekte und mehr.', 'Drawings, pottery, sewing projects and more.')}</p><a href={pagePath('/kreationen/', lang)}>{t('Zur Galerie', 'View the gallery')}</a>
     </section>
     <section class="card home-card">
-      <img data-home-gallery-image="SAMMY" hidden alt="" />
+      <img data-home-image="SAMMY" hidden alt="" />
       <h2>Sammy</h2><p>{t('Einblicke in das Leben mit meinem Hund.', 'A glimpse into life with my dog.')}</p><a href={pagePath('/sammy/', lang)}>{t('Zu Sammy', 'Meet Sammy')}</a>
     </section>
   </div>

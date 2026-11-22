@@ -75,6 +75,11 @@ export class PublicMediaController {
     return this.media.list(pageNumber(page), category, true, language(lang));
   }
 
+  @Get('latest')
+  async latest(@Query('category') category: unknown, @Query('lang') lang: unknown) {
+    return { image: await this.media.latestPublicPhoto(category, language(lang)) };
+  }
+
   @Get(':id/image')
   async image(@Param('id') id: string) { return imageResponse(await this.media.image(reportId(id), true)); }
 }
