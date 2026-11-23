@@ -1196,7 +1196,3 @@ Der Container wird auch bei Testfehlern entfernt. Es werden keine existierenden
 Datenbanken verwendet. Das Deployment auf Synology und die dortige
 PostgreSQL-Erstinitialisierung muessen in der Zielumgebung verifiziert werden.
 
-## Naechste Ausbauschritte
-
-1. Datenschutzangaben fuer den Produktivbetrieb vervollstaendigen und freigeben.
-2. Backups, Monitoring und produktives Deployment.
