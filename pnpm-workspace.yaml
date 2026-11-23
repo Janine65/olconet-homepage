@@ -1,6 +1,11 @@
 packages:
   - apps/*
 
+overrides:
+  effect: ^3.22.1
+  '@emnapi/core': ^1.11.3
+  '@emnapi/runtime': ^1.11.3
+
 allowBuilds:
   '@nestjs/core': true
   '@parcel/watcher': true
