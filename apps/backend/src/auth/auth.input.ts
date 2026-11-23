@@ -29,3 +29,17 @@ export function loginInput(value: unknown) {
   }
   return { email: normalizeEmail(value.email), password: validatePassword(value.password) };
 }
+
+export function passwordChangeInput(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+    !('currentPassword' in value) || !('newPassword' in value) ||
+    Object.keys(value).some(key => !['currentPassword', 'newPassword'].includes(key))) {
+    throw new BadRequestException('Aktuelles und neues Passwort sind erforderlich.');
+  }
+  const currentPassword = validatePassword(value.currentPassword);
+  const newPassword = validatePassword(value.newPassword, true);
+  if (currentPassword === newPassword) {
+    throw new BadRequestException('Das neue Passwort muss sich vom aktuellen unterscheiden.');
+  }
+  return { currentPassword, newPassword };
+}

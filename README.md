@@ -125,7 +125,28 @@ vorhandene Konten werden niemals ueberschrieben. Passwoerter nicht als
 Kommandozeilenargument oder in der Shell-History uebergeben. Fuer automatisierte
 Einrichtung akzeptiert der Befehl `--password-stdin`; ein Secret dann aus
 einer geschuetzten Datei oder einem Secret-Manager an stdin uebergeben.
-Ein Passwort-Reset und eine Kontoverwaltungsoberflaeche folgen spaeter.
+
+Unter **Konto → Passwort ändern** können angemeldete Personen ihr eigenes
+Passwort ändern. Dafür ist das bisherige Passwort erforderlich. Nach dem Wechsel
+werden alle Sitzungen dieses Kontos beendet; andere Konten bleiben angemeldet.
+
+Ein vergessenes Passwort kann nur mit Zugriff auf die Server-CLI zurückgesetzt
+werden. Der Reset ändert ein bestehendes Konto und beendet alle seine Sitzungen.
+Das neue Passwort wird zweimal verdeckt abgefragt:
+
+```sh
+pnpm --filter @olconet/backend admin:reset-password --email person@example.com
+```
+
+In einer laufenden Synology-Compose-Installation mit dem aktualisierten
+Backend-Image:
+
+```sh
+docker compose --env-file .env.docker.synology exec backend node dist/cli/reset-admin-password.js --email person@example.com
+```
+
+Der Reset unterstützt ebenfalls `--password-stdin` mit einem Secret aus einer
+geschützten Datei oder einem Secret-Manager. Es gibt keinen Reset per E-Mail.
 
 `ADMIN_ORIGIN` ist die vollstaendige Browser-Origin der Verwaltung, ohne
 Pfad oder abschliessenden Slash. Standard bei `pnpm dev`:
@@ -177,6 +198,7 @@ es gibt keine ungesicherte HTTP-Entsperrfunktion.
 | --- | --- |
 | `POST /api/auth/login` | Login mit JSON `{ "email": "...", "password": "..." }` |
 | `GET /api/auth/me` | Angemeldetes Konto ohne Passwort-Hash |
+| `POST /api/auth/password` | Eigenes Passwort mit JSON `{ "currentPassword": "...", "newPassword": "..." }` wechseln; alle Sitzungen des Kontos beenden |
 | `POST /api/auth/logout` | Sitzung widerrufen und Cookie entfernen |
 | `GET /api/admin/overview` | Geschuetzte Anzahl der Reiseberichte, Kreationen und Sammy-Fotos |
 
@@ -552,6 +574,14 @@ abfragt und die IP danach verwirft. Besuchsdaten werden bei einer Erfassung
 hoechstens taeglich auf 365 Tage begrenzt; alte Seitenaufrufe werden kaskadiert
 geloescht.
 
+Ueber **Besucherstatistik einstellen** im Footer kann die Erfassung fuer den
+aktuellen Browser abgelehnt oder wieder zugelassen werden. Das Cookie
+`olconet_analytics_disabled` speichert die Ablehnung bis zu einem Jahr. Die
+Homepage sendet danach keine Statistikdaten mehr; das Backend respektiert die
+Ablehnung auch bei eingehenden Statistik-POSTs und entfernt dabei das
+Statistik-Sitzungscookie. Bereits erfasste Besuche bleiben bis zur regulären
+Bereinigung gespeichert.
+
 Dev-Modus, Loopback und private LAN-Adressen werden standardmaessig nicht
 erfasst. Fuer einen lokalen Funktionstest kannst du
 `PUBLIC_VISITOR_TRACKING_TEST_MODE=true` sowohl in `apps/homepage/.env` als
@@ -624,9 +654,30 @@ bleibt deaktiviert, solange eine benoetigte Einstellung fehlt. Den
 Cloudflare-Schluessel niemals im Frontend oder in einer eingecheckten
 Konfigurationsdatei ablegen.
 
-Vor der oeffentlichen Aktivierung die Datenschutzhinweise und gegebenenfalls
-erforderliche Einwilligungen fuer Turnstile, GeoIP und die Besuchsauswertung
-rechtlich pruefen und auf der Website ergaenzen.
+### Datenschutz und Impressum
+
+Datenschutzerklaerung und Impressum sind auf Deutsch und Englisch im Footer
+verlinkt. Das Kontaktformular verweist vor den Eingabefeldern auf den
+Datenschutz. Die Texte beschreiben den vorgesehenen Betrieb auf einer eigenen
+Synology in der Schweiz mit Zoho Mail (Hosting in den USA), Turnstile und
+Besucherstatistik. Kontaktmails werden nach der Beantwortung geloescht. Neben
+der Besucherstatistik werden keine separaten Zugriffsprotokolle gespeichert.
+Die Texte aktivieren keine Dienste. Die Besucherstatistik hat eine
+Ablehnungsmoeglichkeit, aber keine vorgelagerte Einwilligungsabfrage.
+
+Vor der oeffentlichen Freigabe:
+
+- Fuer Zoho Mail kann nach aktuellem Kenntnisstand keine Zertifizierung unter
+  dem Swiss-U.S. Data Privacy Framework herangezogen werden. Fuer die
+  Uebermittlung in die USA eine andere tragfaehige Grundlage nach Schweizer DSG
+  klaeren und die anwendbaren Garantien in beiden Sprachfassungen nennen.
+  Fuer Turnstile ebenfalls die Bearbeitungslaender und allfaellige Garantien
+  pruefen.
+- Ob ueber die vorhandene Ablehnungsmoeglichkeit hinaus weitere Anforderungen
+  gelten, insbesondere fuer Turnstile und Besuchergruppen ausserhalb der
+  Schweiz, getrennt pruefen.
+
+Bei geaenderter Konfiguration die Datenschutzerklaerung aktualisieren.
 
 ### Sammy und Meine Kreationen einfach sortieren
 
@@ -1147,4 +1198,5 @@ PostgreSQL-Erstinitialisierung muessen in der Zielumgebung verifiziert werden.
 
 ## Naechste Ausbauschritte
 
-1. Passwort-/Kontoverwaltung, Datenschutz/Impressum, Backups, Monitoring und produktives Deployment.
+1. Datenschutzangaben fuer den Produktivbetrieb vervollstaendigen und freigeben.
+2. Backups, Monitoring und produktives Deployment.

@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { verifyPassword } from './password';
+import { hashPassword, verifyPassword } from './password';
 import { Prisma } from '../generated/prisma/client';
 
 export const SESSION_SECONDS = 8 * 60 * 60;
@@ -25,7 +25,7 @@ export function sessionToken(cookie: string | undefined) {
 export class AuthService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  private async limit(key: string, maximum: number) {
+  private async limit(key: string, maximum: number, message = 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.') {
     // SQL-Identifikatoren lassen sich nicht binden; Schema sicher quotieren.
     const table = Prisma.raw(`"${this.prisma.databaseSchema.replace(/"/g, '""')}"."LoginThrottle"`);
     const rows = await this.prisma.$queryRaw<{ attempts: number }[]>`
@@ -39,8 +39,16 @@ export class AuthService {
       RETURNING "attempts"
     `;
     if (rows[0].attempts > maximum) {
-      throw new HttpException('Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
     }
+  }
+
+  private async lockPassword(db: Prisma.TransactionClient, id: string) {
+    const table = Prisma.raw(`"${this.prisma.databaseSchema.replace(/"/g, '""')}"."AdminUser"`);
+    const [row] = await db.$queryRaw<{ passwordHash: string }[]>`
+      SELECT "passwordHash" FROM ${table} WHERE "id" = ${id}::uuid FOR UPDATE
+    `;
+    return row?.passwordHash;
   }
 
   async login(email: string, password: string, previousToken: string | null) {
@@ -55,11 +63,38 @@ export class AuthService {
     const token = randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000);
     await this.prisma.$transaction(async (db) => {
+      // Kein Login mit einem Hash, der inzwischen durch Wechsel oder Reset ersetzt wurde.
+      if (await this.lockPassword(db, user.id) !== user.passwordHash) {
+        throw new UnauthorizedException('E-Mail-Adresse oder Passwort ist falsch.');
+      }
       await db.adminSession.deleteMany({ where: { expiresAt: { lte: new Date() } } });
       if (previousToken) await db.adminSession.deleteMany({ where: { tokenHash: tokenHash(previousToken) } });
       await db.adminSession.create({ data: { tokenHash: tokenHash(token), userId: user.id, expiresAt } });
     });
     return { token, user: { id: user.id, email: user.email, displayName: user.displayName } };
+  }
+
+  async changePassword(id: string, token: string | null, currentPassword: string, newPassword: string) {
+    if (!token) throw new UnauthorizedException('Bitte anmelden.');
+    await this.prisma.loginThrottle.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+    const message = 'Zu viele Passwortversuche. Bitte in 15 Minuten erneut versuchen.';
+    await this.limit('password:global', 100, message);
+    await this.limit(`password:${id}`, 10, message);
+    const user = await this.prisma.adminUser.findUnique({ where: { id }, select: { passwordHash: true } });
+    if (!user) throw new UnauthorizedException('Bitte anmelden.');
+    if (!await verifyPassword(currentPassword, user.passwordHash)) {
+      throw new BadRequestException('Das aktuelle Passwort ist falsch.');
+    }
+    const passwordHash = await hashPassword(newPassword);
+    await this.prisma.$transaction(async db => {
+      const currentHash = await this.lockPassword(db, id);
+      const session = await db.adminSession.findUnique({ where: { tokenHash: tokenHash(token) } });
+      if (currentHash !== user.passwordHash || session?.userId !== id || session.expiresAt <= new Date()) {
+        throw new UnauthorizedException('Bitte erneut anmelden.');
+      }
+      await db.adminUser.update({ where: { id }, data: { passwordHash } });
+      await db.adminSession.deleteMany({ where: { userId: id } });
+    });
   }
 
   async userForToken(token: string | null): Promise<AuthUser | null> {

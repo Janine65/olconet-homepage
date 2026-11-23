@@ -88,6 +88,16 @@ test('Persistente Besuche pro Browser-Sitzung und lokaler Testmodus', async t =>
   assert.deepEqual(await exit.json(), { enabled: true });
   assert.equal(await db.visitorSession.count(), 1);
   assert.equal(await db.visitorPageView.count(), 4);
+  const optOutCookie = { Cookie: `${cookie.split(';')[0]}; olconet_analytics_disabled=1` };
+  const cleanup = await post({ ...contactHeaders, ...optOutCookie }, {});
+  assert.deepEqual(await cleanup.json(), { enabled: false });
+  assert.ok(cleanup.headers.getSetCookie().some(value => /^olconet_analytics=;.*Expires=/.test(value)));
+  for (const body of [{ path: '/nicht-erfassen/' }, { finish: true, pageViewId: firstResult.pageViewId, durationSeconds: 100 }]) {
+    const optedOut = await post({ ...headers('external'), ...optOutCookie }, body);
+    assert.deepEqual(await optedOut.json(), { enabled: false });
+  }
+  assert.equal(await db.visitorSession.count(), 1);
+  assert.equal(await db.visitorPageView.count(), 4);
   const session = await db.visitorSession.findFirst({ include: { pageViews: true } });
   assert.equal(session?.country, null);
   assert.equal(session?.source, 'search');

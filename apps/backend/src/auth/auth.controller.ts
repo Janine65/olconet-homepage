@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response, CookieOptions } from 'express';
 import { AuthService, SESSION_COOKIE, SESSION_SECONDS, sessionToken } from './auth.service';
 import { AuthRequest } from './auth.guard';
 import { readAuthConfig } from './auth.config';
-import { loginInput } from './auth.input';
+import { loginInput, passwordChangeInput } from './auth.input';
 import { Public } from './public';
 
 @Controller('api/auth')
@@ -30,6 +30,15 @@ export class AuthController {
   @Get('me')
   me(@Req() request: AuthRequest) {
     return { user: request.authUser };
+  }
+
+  @Post('password')
+  @HttpCode(204)
+  async changePassword(@Body() body: unknown, @Req() request: AuthRequest, @Res({ passthrough: true }) response: Response) {
+    if (!request.authUser) throw new UnauthorizedException('Bitte anmelden.');
+    const { currentPassword, newPassword } = passwordChangeInput(body);
+    await this.auth.changePassword(request.authUser.id, sessionToken(request.headers.cookie), currentPassword, newPassword);
+    response.clearCookie(SESSION_COOKIE, this.cookie);
   }
 
   @Public()

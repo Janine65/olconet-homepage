@@ -8,6 +8,7 @@ import { GeoIpService } from './visitor-analytics.service';
 import { visitorTrackingEnabled, visitorTrackingTestMode } from './visitor-config';
 
 const SESSION_COOKIE = 'olconet_analytics';
+const OPT_OUT_COOKIE = 'olconet_analytics_disabled=1';
 const SESSION_COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: 'strict' as const,
@@ -98,15 +99,19 @@ export class VisitorsController {
   @Post()
   async track(@Body() body: unknown, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
     response.clearCookie('olconet_visit', { ...SESSION_COOKIE_OPTIONS, path: '/api/public/visitors' });
+    const cookies = (request.headers.cookie ?? '').split(';').map(value => value.trim());
+    if (cookies.includes(OPT_OUT_COOKIE)) {
+      response.clearCookie(SESSION_COOKIE, SESSION_COOKIE_OPTIONS);
+      return { enabled: false };
+    }
     if (!visitorTrackingEnabled(process.env)) return { enabled: false };
     const proof = visitorProof(request.headers, this.secret) ?? this.localTestProof(request);
     if (!proof) throw new ServiceUnavailableException('Besuchserfassung: vertrauenswürdige Proxy-Konfiguration fehlt.');
     if (proof.kind === 'excluded') return { enabled: true, excluded: true };
 
     const input = visitorInput(body);
-    const cookies = (request.headers.cookie ?? '').split(';').map(value => value.trim())
-      .filter(value => value.startsWith(`${SESSION_COOKIE}=`));
-    const candidate = cookies.length === 1 ? cookies[0].slice(SESSION_COOKIE.length + 1) : '';
+    const sessionCookies = cookies.filter(value => value.startsWith(`${SESSION_COOKIE}=`));
+    const candidate = sessionCookies.length === 1 ? sessionCookies[0].slice(SESSION_COOKIE.length + 1) : '';
     const sessionId = UUID_PATTERN.test(candidate) ? candidate : randomUUID();
     const now = new Date();
     const existing = await this.prisma.visitorSession.findUnique({ where: { id: sessionId }, select: { id: true } });

@@ -5,6 +5,8 @@ import Bericht from './reisen/bericht.astro';
 import Kreationen from './kreationen.astro';
 import Sammy from './sammy.astro';
 import Kontakt from './kontakt.astro';
+import Datenschutz from './datenschutz.astro';
+import Impressum from './impressum.astro';
 
 export function getStaticPaths() {
   return [
@@ -14,9 +16,12 @@ export function getStaticPaths() {
     { params: { english: 'en/kreationen' }, props: { page: 'kreationen' } },
     { params: { english: 'en/sammy' }, props: { page: 'sammy' } },
     { params: { english: 'en/kontakt' }, props: { page: 'kontakt' } },
+    { params: { english: 'en/datenschutz' }, props: { page: 'datenschutz' } },
+    { params: { english: 'en/impressum' }, props: { page: 'impressum' } },
   ];
 }
-const pages = { home: Home, reisen: Reisen, bericht: Bericht, kreationen: Kreationen, sammy: Sammy, kontakt: Kontakt };
+const pages = { home: Home, reisen: Reisen, bericht: Bericht, kreationen: Kreationen, sammy: Sammy, kontakt: Kontakt,
+  datenschutz: Datenschutz, impressum: Impressum };
 interface Props { page: keyof typeof pages; }
 const Page = pages[Astro.props.page];
 ---

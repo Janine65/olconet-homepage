@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import OperatorContact from '../components/OperatorContact.astro';
+import { translations, type Language } from '../i18n';
+interface Props { lang?: Language; }
+const { lang = 'de' } = Astro.props;
+const t = translations(lang);
+const title = t('Impressum', 'Legal notice');
+---
+<Layout title={title} description={t('Betreiberin und Kontakt der Website olconet.', 'Operator and contact details for the olconet website.')} lang={lang}>
+  <h1>{title}</h1>
+  <h2>{t('Verantwortlich für diese Website', 'Responsible for this website')}</h2>
+  <OperatorContact lang={lang} />
+</Layout>

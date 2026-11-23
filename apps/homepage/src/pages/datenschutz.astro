@@ -1,0 +1,65 @@
+---
+import Layout from '../layouts/Layout.astro';
+import OperatorContact from '../components/OperatorContact.astro';
+import { translations, type Language } from '../i18n';
+interface Props { lang?: Language; }
+const { lang = 'de' } = Astro.props;
+const t = translations(lang);
+const title = t('Datenschutzerklärung', 'Privacy notice');
+---
+<Layout title={title} description={t('Wie olconet beim Besuch der Website und bei Kontaktanfragen Personendaten bearbeitet.', 'How olconet handles personal data when you visit the website or contact us.')} lang={lang}>
+  <h1>{title}</h1>
+  <h2>{t('Verantwortliche Stelle', 'Data controller')}</h2>
+  <OperatorContact lang={lang} />
+
+  <h2>{t('Betrieb der Website', 'Website operation')}</h2>
+  <p>{t(
+    'Diese Website wird auf einer Synology im eigenen Netz in der Schweiz betrieben. Bei einem Aufruf verarbeitet der Server technische Verbindungsdaten wie die IP-Adresse, um die angeforderte Seite auszuliefern. Neben der unten beschriebenen Besucherstatistik werden keine separaten Zugriffsprotokolle gespeichert.',
+    'This website is hosted on a Synology server on a private network in Switzerland. When you visit, the server processes technical connection data such as your IP address to deliver the requested page. No separate access logs are stored beyond the visitor statistics described below.',
+  )}</p>
+
+  <h2>{t('Kontakt per E-Mail und Formular', 'Contact by email and form')}</h2>
+  <p>{t(
+    'Wenn du Kontakt aufnimmst, verwende ich deine E-Mail-Adresse, deinen Namen (soweit du ihn angibst) und deine Nachricht, um deine Anfrage zu bearbeiten. Das Formular leitet die Nachricht per E-Mail weiter. Name, E-Mail-Adresse und Nachricht werden dabei nicht in der Website-Datenbank gespeichert. Für den Versand und Empfang nutze ich Zoho Mail. Die E-Mails werden bei Zoho in den USA gespeichert.',
+    'If you contact me, I use your email address, your name (if you provide it) and your message to handle your enquiry. The form forwards your message by email. Your name, email address and message are not stored in the website database. I use Zoho Mail to send and receive email. Zoho stores these emails in the United States.',
+  )} <a href="https://www.zoho.com/privacy.html">{t('Datenschutzerklärung von Zoho', 'Zoho privacy policy')}</a>.</p>
+  <p>{t('Kontaktmails lösche ich, nachdem ich sie beantwortet habe.', 'I delete contact emails after replying to them.')}</p>
+  <p>{t(
+    'Das Kontaktformular verwendet Cloudflare Turnstile zur Abwehr automatisierter Anfragen. Beim Laden der Prüfung erhält Cloudflare technische Signale wie IP-Adresse, Browser-Kennung und TLS-Fingerabdruck. Der Nachrichteninhalt wird nicht an Turnstile übermittelt. Cloudflare kann Daten in den USA und anderen Ländern bearbeiten.',
+    'The contact form uses Cloudflare Turnstile to block automated requests. When the check loads, Cloudflare receives technical signals such as your IP address, browser identifier and TLS fingerprint. Your message is not sent to Turnstile. Cloudflare may process data in the United States and other countries.',
+  )} <a href="https://www.cloudflare.com/turnstile-privacy-policy/">{t('Datenschutzhinweise zu Turnstile', 'Turnstile privacy information')}</a>.
+    {t('Du kannst mir stattdessen direkt per E-Mail schreiben.', 'You can email me directly instead.')}
+  </p>
+
+  <h2 id="besucherstatistik">{t('Besucherstatistik', 'Visitor statistics')}</h2>
+  <p>{t(
+    'Die Website wertet Besuche aus, um zu verstehen, welche Seiten wie genutzt werden. Das Sitzungscookie olconet_analytics ordnet Seitenaufrufe einer Browser-Sitzung zu. Gespeichert werden eine zufällige Sitzungskennung, die grobe Zugriffsquelle, Geräte- und Browserkategorie, Seitenpfad, Aufrufzeitpunkt und Besuchsdauer pro Seite sowie, wenn ermittelbar, das Land.',
+    'This website measures visits to understand how its pages are used. The olconet_analytics session cookie groups page views within a browser session. The statistics store a random session identifier, a broad referral category, device and browser categories, page path, time and duration of the visit per page and, where available, the country.',
+  )}</p>
+  <p>{t(
+    'Für die Landeszuordnung wird die IP-Adresse mit einer lokalen GeoIP-Datenbank abgeglichen. In der Statistikdatenbank werden weder die IP-Adresse noch die vollständige Browser-Kennung oder die vollständige Adresse der verweisenden Seite gespeichert. Bei laufender Erfassung werden Daten, die älter als 365 Tage sind, bei der täglichen Bereinigung gelöscht.',
+    'The IP address is checked against a local GeoIP database to determine the country. The statistics database does not store the IP address, the full browser identifier or the full referring address. While collection is active, records older than 365 days are removed during daily cleanup.',
+  )}</p>
+  <p>{t(
+    'Du kannst die Besucherstatistik für diesen Browser ablehnen und später wieder zulassen. Ein separates Cookie merkt sich deine Ablehnung bis zu einem Jahr, sofern du es nicht vorher löschst. Die Ablehnung stoppt die weitere Erfassung, löscht aber keine bereits erfassten Besuche. Ohne JavaScript findet keine Besuchserfassung statt.',
+    'You can turn off visitor statistics for this browser and allow them again later. A separate cookie remembers your choice to turn off statistics for up to one year unless you delete it sooner. Turning off statistics stops further collection but does not delete visits already recorded. Visitor statistics do not run without JavaScript.',
+  )}</p>
+  <div
+    data-analytics-settings
+    data-reject={t('Besucherstatistik ablehnen', 'Turn off visitor statistics')}
+    data-allow={t('Besucherstatistik wieder zulassen', 'Allow visitor statistics again')}
+    data-rejected={t('Besucherstatistik ist für diesen Browser abgelehnt.', 'Visitor statistics are turned off for this browser.')}
+    data-allowed={t('Besucherstatistik ist für diesen Browser zugelassen, sofern sie auf der Website aktiv ist.', 'Visitor statistics are allowed for this browser if the site has enabled them.')}
+    data-save-error={t('Deine Auswahl konnte nicht gespeichert werden. Prüfe, ob dein Browser Cookies für diese Website zulässt.', 'Your choice could not be saved. Check whether your browser allows cookies for this website.')}
+    hidden
+  >
+    <button type="button"></button>
+    <p role="status"></p>
+  </div>
+
+  <h2>{t('Deine Rechte', 'Your rights')}</h2>
+  <p>{t(
+    'Du kannst Auskunft darüber verlangen, ob und welche Personendaten über dich bearbeitet werden. Soweit die gesetzlichen Voraussetzungen erfüllt sind, kannst du auch Berichtigung oder Löschung verlangen. Wende dich dafür an die oben genannte Kontaktadresse. Du kannst dich ausserdem an den Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) wenden.',
+    'You can ask whether personal data about you is processed and, if so, what data is held. Where the legal requirements are met, you can also request correction or deletion. Use the contact address above to exercise these rights. You can also contact the Swiss Federal Data Protection and Information Commissioner (FDPIC).',
+  )} <a href={t('https://www.edoeb.admin.ch/de', 'https://www.edoeb.admin.ch/en')}>{t('Website des EDÖB', 'FDPIC website')}</a>.</p>
+</Layout>

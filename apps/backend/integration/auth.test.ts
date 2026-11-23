@@ -211,6 +211,60 @@ test('Verwaltungslogin mit echter isolierter PostgreSQL-Datenbank', async (t) =>
     }
   });
 
+  await t.test('Passwortwechsel schützt das Konto und beendet nur dessen Sitzungen', async () => {
+    const cookieFor = async (email: string) => {
+      const response = await login(email);
+      assert.equal(response.status, 200);
+      return response.headers.get('set-cookie')!.split(';')[0];
+    };
+    const current = await cookieFor(first.email);
+    const otherDevice = await cookieFor(first.email);
+    const otherAccount = await cookieFor('second@example.com');
+    const newPassword = 'Changed-for-isolated-tests!';
+    const change = (currentPassword: string, session: string, extra: Record<string, string> = {}) =>
+      fetch(`${base}/api/auth/password`, {
+        method: 'POST', headers: { ...headers, Cookie: session, ...extra },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+    const me = (session: string) => fetch(`${base}/api/auth/me`, { headers: { Cookie: session } });
+
+    assert.equal((await change(password, '')).status, 401);
+    assert.equal((await change(password, current, { Origin: 'https://foreign.example' })).status, 403);
+    const wrong = await change('wrong', current);
+    assert.equal(wrong.status, 400);
+    assert.equal((await wrong.json()).message, 'Das aktuelle Passwort ist falsch.');
+    assert.equal((await me(current)).status, 200);
+
+    const changed = await change(password, current);
+    assert.equal(changed.status, 204);
+    assert.match(changed.headers.get('set-cookie')!, /Expires=Thu, 01 Jan 1970/);
+    assert.equal((await me(current)).status, 401);
+    assert.equal((await me(otherDevice)).status, 401);
+    assert.equal((await me(otherAccount)).status, 200);
+    assert.equal((await login(first.email, password)).status, 401);
+    assert.equal((await login(first.email, newPassword)).status, 200);
+  });
+
+  await t.test('CLI setzt nur bestehende Konten zurück und widerruft ihre Sitzungen', async () => {
+    const email = 'second@example.com';
+    const before = await login(email);
+    assert.equal(before.status, 200);
+    const existing = before.headers.get('set-cookie')!.split(';')[0];
+    const newPassword = 'Reset-for-isolated-tests!';
+    const reset = (target: string, pass = newPassword) => spawnSync(process.execPath, [
+      'node_modules/tsx/dist/cli.mjs', 'src/cli/reset-admin-password.ts', '--email', target, '--password-stdin',
+    ], { input: `${pass}\n`, encoding: 'utf8' });
+    assert.equal(reset('nonexistent@example.com').status, 1);
+    assert.equal(reset(email, 'short').status, 1);
+    assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Cookie: existing } })).status, 200);
+
+    const result = reset(' Second@Example.com ');
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal((await fetch(`${base}/api/auth/me`, { headers: { Cookie: existing } })).status, 401);
+    assert.equal((await login(email)).status, 401);
+    assert.equal((await login(email, newPassword)).status, 200);
+  });
+
   await t.test('Persistente Limits sperren nach zehn Versuchen, auch bei unbekannten Konten', async () => {
     for (let i = 0; i < 10; i++) assert.equal((await login('limit@example.com', 'wrong')).status, 401);
     assert.equal((await login('limit@example.com', 'wrong')).status, 429);

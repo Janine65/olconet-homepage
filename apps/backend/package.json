@@ -1,6 +1,6 @@
 {
   "name": "@olconet/backend",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "scripts": {
     "dev": "tsx watch src/main.ts",
@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "admin:create": "tsx src/cli/create-admin.ts",
+    "admin:reset-password": "tsx src/cli/reset-admin-password.ts",
     "test:integration": "pnpm db:generate && tsx --test --test-concurrency=1 integration/*.test.ts"
   },
   "dependencies": {

@@ -10,6 +10,7 @@ export class ApiError extends Error {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly user = signal<AdminUser | null>(null);
+  readonly passwordChanged = signal(false);
 
   private async response(path: string, body?: object | FormData): Promise<Response> {
     let response: Response;
@@ -33,7 +34,9 @@ export class AuthService {
         400: 'Die Eingaben sind ungültig.',
         401: writing && path.endsWith('/login') ? 'E-Mail-Adresse oder Passwort ist falsch.' : 'Die Sitzung ist abgelaufen. Bitte erneut anmelden.',
         403: 'Die Anfrage wurde abgelehnt. Bitte die konfigurierte Verwaltungsadresse verwenden.',
-        429: path.endsWith('/login') ? 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.' : 'Der Dienst ist ausgelastet. Bitte erneut versuchen.',
+        429: path.endsWith('/login') ? 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.'
+          : path === '/api/auth/password' ? 'Zu viele Passwortversuche. Bitte in 15 Minuten erneut versuchen.'
+          : 'Der Dienst ist ausgelastet. Bitte erneut versuchen.',
         404: 'Der angeforderte Inhalt wurde nicht gefunden.',
         409: 'Speicherkonflikt. Bitte die gespeicherte Version neu laden.',
         413: 'Die Anfrage ist zu gross.',
@@ -99,7 +102,14 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const result = await this.request<{ user: AdminUser }>('/api/auth/login', { email, password });
+    this.passwordChanged.set(false);
     this.user.set(result.user);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    await this.response('/api/auth/password', { currentPassword, newPassword });
+    this.passwordChanged.set(true);
+    this.user.set(null);
   }
 
   async logout() {

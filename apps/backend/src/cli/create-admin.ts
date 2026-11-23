@@ -1,11 +1,12 @@
 import 'dotenv/config';
 import { parseArgs } from 'node:util';
 import { PrismaService } from '../prisma.service';
-import { normalizeEmail, validatePassword } from '../auth/auth.input';
+import { normalizeEmail } from '../auth/auth.input';
 import { hashPassword } from '../auth/password';
 import { ConfigurationError } from '../config';
 import { Prisma } from '../generated/prisma/client';
 import { BadRequestException } from '@nestjs/common';
+import { readPassword } from './read-password';
 
 async function main() {
   const { values } = parseArgs({
@@ -20,22 +21,7 @@ async function main() {
   if (!displayName || displayName.length > 100) {
     throw new BadRequestException('--name muss zwischen 1 und 100 Zeichen enthalten.');
   }
-  let password: string;
-  if (values['password-stdin']) {
-    let input = '';
-    for await (const chunk of process.stdin) {
-      input += String(chunk);
-      if (Buffer.byteLength(input) > 130) throw new BadRequestException('Passworteingabe ist zu lang.');
-    }
-    password = input.replace(/\r?\n$/, '');
-  } else {
-    if (!process.stdin.isTTY) throw new BadRequestException('Ein Terminal oder --password-stdin ist erforderlich.');
-    const { password: passwordPrompt } = await import('@inquirer/prompts');
-    password = await passwordPrompt({ message: 'Passwort (mindestens 12 Zeichen):', mask: '*' });
-    const confirmation = await passwordPrompt({ message: 'Passwort wiederholen:', mask: '*' });
-    if (password !== confirmation) throw new BadRequestException('Die Passwörter stimmen nicht überein.');
-  }
-  validatePassword(password, true);
+  const password = await readPassword(values['password-stdin']);
   const prisma = new PrismaService();
   try {
     await prisma.adminUser.create({
